@@ -1,13 +1,11 @@
 """
-Gateway Server - FastAPI 主程式
+Gateway Server - FastAPI 主程式（純 API 服務）
 """
 
 import sys
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from loguru import logger
 
 from martlet_molt.core.config import settings
@@ -26,36 +24,27 @@ logger.add(
 async def lifespan(app: FastAPI):
     """應用生命週期"""
     # 啟動
-    logger.info(f"Starting MartletMolt System {settings.system_name}")
+    logger.info(f"Starting MartletMolt API Server {settings.system_name}")
     logger.info(f"Gateway: {settings.gateway.url}")
+    logger.info("Running in pure API mode (no frontend)")
 
     yield
 
     # 關閉
-    logger.info(f"Shutting down MartletMolt System {settings.system_name}")
+    logger.info(f"Shutting down MartletMolt API Server {settings.system_name}")
 
 
 def create_app() -> FastAPI:
-    """建立 FastAPI 應用"""
+    """建立 FastAPI 應用（純 API）"""
     app = FastAPI(
-        title="MartletMolt",
-        description="A Self-Evolving AI Agent System",
+        title="MartletMolt API",
+        description="A Self-Evolving AI Agent System - Pure API Backend",
         version="0.1.0",
         lifespan=lifespan,
     )
 
-    # 註冊路由
+    # 註冊 API 路由
     app.include_router(router)
-
-    # 靜態檔案（使用共享目錄）
-    static_dir = settings.static_dir
-    if static_dir.exists():
-        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-
-    # 模板（使用共享目錄）
-    templates_dir = settings.templates_dir
-    if templates_dir.exists():
-        app.state.templates = Jinja2Templates(directory=str(templates_dir))
 
     return app
 

@@ -25,7 +25,7 @@
                     </a>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span class="text-xs text-gray-400">System: <span class="text-blue-400">{{ system }}</span></span>
+                    <span class="text-xs text-gray-400">Backend: <span class="text-green-400">{{ backend_url }}</span></span>
                 </div>
             </div>
         </div>
@@ -92,9 +92,9 @@
             addMessage('user', message);
             messageInput.value = '';
 
-            // Send to API
+            // Send to Backend API (direct connection)
             try {
-                const response = await fetch('/chat', {
+                const response = await fetch('{{ backend_url }}/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 

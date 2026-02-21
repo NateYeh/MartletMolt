@@ -18,14 +18,21 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Web UI (HTMX + Tailwind)                                       │
-│  - 聊天介面、Tool 結果展示、系統狀態                              │
+│  Web Lite Frontend (Port 8002)                                  │
+│  - 獨立的 FastAPI 服務                                           │
+│  - 提供HTML 頁面、靜態資源                                        │
+│  - 透過 HTTP 呼叫後端 API                                        │
+├─────────────────────────────────────────────────────────────────┤
+│  System A/B API Server (Port 8001)                              │
+│  - 純 API 服務（不提供前端頁面）                                  │
+│  ├─ /health, /status        ← 系統端點                          │
+│  ├─ /chat                    ← 對話 API                         │
+│  └─ /chat/stream             ← 串流 API                         │
 ├─────────────────────────────────────────────────────────────────┤
 │  Orchestrator (Guardian)                                        │
 │  - A/B 系統生命週期管理、健康檢查、切換、同步 (不可被 AI 修改)    │
 ├─────────────────────────────────────────────────────────────────┤
-│  System A / System B                                            │
-│  ├─ Gateway Server (FastAPI)                                    │
+│  System A / System B (Backend)                                  │
 │  ├─ Agent Runtime (AI Core + Tools)                             │
 │  ├─ Provider Layer (OpenAI, Anthropic, Ollama)                  │
 │  └─ Channel Layer (Web, CLI)                                    │
@@ -39,10 +46,10 @@
 | 路徑 | 用途 |
 |------|------|
 | `orchestrator/` | 守護程序，管理 A/B 生命週期（**不可被 AI 修改**） |
-| `system_a/` | A 系統（純後端，Agent/Tools/Providers） |
-| `system_b/` | B 系統（純後端，Agent/Tools/Providers） |
-| `frontend/` | **前端專案目錄（支援多 UI 專案）** |
-| `frontend/web-lite/` | 輕量級 UI（Tailwind + HTMX + Jinja2） |
+| `system_a/` | A 系統（純 API 後端，Agent/Tools/Providers） |
+| `system_b/` | B 系統（純 API 後端，Agent/Tools/Providers） |
+| `frontend/` | **前端專案目錄（多 UI 專案）** |
+| `frontend/web-lite/` | 輕量級前端服務（獨立 FastAPI，Port 8002） |
 | `frontend/web-lite/templates/` | HTML 模板（Jinja2） |
 | `frontend/web-lite/static/` | 靜態資源（CSS、JS） |
 | `shared/` | 運行時共享資料（不上傳 Git） |
@@ -82,19 +89,21 @@ system_a/martlet_molt/
 ├── cli.py                 # CLI 入口
 └── main.py                # 服務入口
 
-# 前端專案獨立於後端（支援多 UI 專案）
+# 前端專案（獨立於後端，多 UI 專案）
 frontend/
 ├── README.md               # 前端總覽說明
-├── web-lite/               # 輕量級 UI（目前使用中）
-│   ├── README.md           # web-lite 說明文件
-│   ├── templates/          # HTML 模板 (Jinja2)
-│   │   ├── components/     # 可重用元件
-│   │   ├── index.html      # 首頁
-│   │   └── chat.html       # 聊天頁面
-│   └── static/             # 靜態資源
-│       ├── css/
-│       └── js/
-└── (未來專案)/             # 第二個 UI 專案（規劃中）
+└── web-lite/               # 輕量級前端服務（Port 8002）
+    ├── main.py             # FastAPI 入口
+    ├── config.py           # 配置管理
+    ├── routes.py           # 前端路由
+    ├── README.md           # 說明文件
+    ├── templates/          # HTML 模板 (Jinja2)
+    │   ├── components/     # 可重用元件
+    │   ├── index.html      # 首頁
+    │   └── chat.html       # 聊天頁面
+    └── static/             # 靜態資源
+        ├── css/
+        └── js/
 
 # 運行時共享資料
 shared/
@@ -341,8 +350,12 @@ pip install -e ".[dev]"
 # 安裝 Playwright 瀏覽器
 playwright install chromium
 
-# 啟動開發伺服器
-martlet start --dev
+# 啟動開發環境（後端 + 前端）
+make dev
+
+# 或分開啟動
+make dev-backend   # 後端 API (Port 8001)
+make dev-frontend  # 前端服務 (Port 8002)
 
 # CLI 對話模式
 martlet chat

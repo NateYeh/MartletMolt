@@ -5,11 +5,6 @@
 # System switch (a or b)
 active_system: a
 
-# UI configuration
-ui:
-  name: web-lite
-  version: 0.1.0
-
 # Gateway configuration
 gateway:
   host: 127.0.0.1

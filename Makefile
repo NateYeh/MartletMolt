@@ -1,9 +1,10 @@
-.PHONY: install format lint clean yaml-check yaml-fix
+.PHONY: install format lint clean yaml-check yaml-fix dev dev-backend dev-frontend
 
 # 安裝依賴
 install:
 	pip install -e ".[dev]"
 	pip install yamllint yamlfix
+	pip install httpx
 
 # 格式化程式碼
 format:
@@ -35,3 +36,33 @@ clean:
 
 # 完整檢查（CI/CD 用）
 ci: lint
+
+# ─────────────────────────────────────────────────────────
+# 開發服務啟動命令
+# ─────────────────────────────────────────────────────────
+
+# 開發模式：同時啟動後端 API 和前端服務
+dev:
+	@echo "🚀 Starting MartletMolt Development Environment..."
+	@echo "Backend API: http://127.0.0.1:8001"
+	@echo "Frontend:    http://127.0.0.1:8002"
+	@echo ""
+	@echo "Press Ctrl+C to stop all services"
+	@echo ""
+	@trap 'kill 0' INT; \
+	python -m martlet_molt.main & \
+	cd frontend/web-lite && python main.py & \
+	wait
+
+# 只啟動後端 API（Port 8001）
+dev-backend:
+	@echo "🚀 Starting Backend API Server..."
+	@echo "Backend API: http://127.0.0.1:8001"
+	python -m martlet_molt.main
+
+# 只啟動前端服務（Port 8002）
+dev-frontend:
+	@echo "🚀 Starting Frontend Server..."
+	@echo "Frontend: http://127.0.0.1:8002"
+	@echo "Ensure Backend API is running at http://127.0.0.1:8001"
+	cd frontend/web-lite && python main.py

@@ -1,15 +1,16 @@
 """
-REST API 路由
+REST API 路由（純 API，不提供前端頁面）
 """
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from martlet_molt.core.agent import Agent
 from martlet_molt.core.config import settings
 from martlet_molt.core.session import session_manager
+from martlet_molt.providers.base import BaseProvider
+from martlet_molt.providers.ollama import OllamaProvider
 from martlet_molt.providers.openai import OpenAIProvider
 from martlet_molt.tools.base import ToolRegistry
 
@@ -46,11 +47,42 @@ class StatusResponse(BaseModel):
     system: str
     active: bool
     tools: list[str]
+    provider: str
+    model: str
 
 
-# 模板
-def get_templates(request: Request) -> Jinja2Templates:
-    return request.app.state.templates
+def get_provider() -> BaseProvider:
+    """
+    根據配置取得 Provider 實例
+
+    Returns:
+        Provider 實例
+    """
+    provider_name = settings.agent.default_provider
+    provider_config = getattr(settings.providers, provider_name, None)
+
+    if not provider_config:
+        raise ValueError(f"Provider '{provider_name}' not configured")
+
+    if provider_name == "ollama":
+        return OllamaProvider(
+            api_key=provider_config.api_key,
+            base_url=provider_config.base_url or "https://ollama.com",
+            model=provider_config.model,
+            max_tokens=provider_config.max_tokens,
+            temperature=provider_config.temperature,
+        )
+
+    elif provider_name == "openai":
+        return OpenAIProvider(
+            api_key=provider_config.api_key,
+            model=provider_config.model,
+            max_tokens=provider_config.max_tokens,
+            temperature=provider_config.temperature,
+        )
+
+    else:
+        raise ValueError(f"Unsupported provider: {provider_name}")
 
 
 # API 路由
@@ -67,10 +99,13 @@ async def health_check():
 @router.get("/status", response_model=StatusResponse)
 async def get_status():
     """取得系統狀態"""
+    provider_config = getattr(settings.providers, settings.agent.default_provider, None)
     return StatusResponse(
         system=settings.system_name,
         active=True,
         tools=ToolRegistry().list_tools(),
+        provider=settings.agent.default_provider,
+        model=provider_config.model if provider_config else "unknown",
     )
 
 
@@ -81,8 +116,7 @@ async def chat(request: ChatRequest):
     session = session_manager.get_or_create(request.session_id)
 
     # 建立 Agent
-    # TODO: 從配置取得 Provider
-    provider = OpenAIProvider()
+    provider = get_provider()
     agent = Agent(provider=provider, session=session)
 
     try:
@@ -105,7 +139,7 @@ async def chat_stream(request: ChatRequest):
     session = session_manager.get_or_create(request.session_id)
 
     # 建立 Agent
-    provider = OpenAIProvider()
+    provider = get_provider()
     agent = Agent(provider=provider, session=session)
 
     async def generate():
@@ -119,25 +153,4 @@ async def chat_stream(request: ChatRequest):
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
-    )
-
-
-# Web UI 路由
-@router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """首頁"""
-    templates = get_templates(request)
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "system": settings.system_name},
-    )
-
-
-@router.get("/chat", response_class=HTMLResponse)
-async def chat_page(request: Request):
-    """聊天頁面"""
-    templates = get_templates(request)
-    return templates.TemplateResponse(
-        "chat.html",
-        {"request": request, "system": settings.system_name},
     )

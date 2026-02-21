@@ -1,10 +1,9 @@
 """
-REST API 路由
+REST API 路由（純 API，不提供前端頁面）
 """
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from martlet_molt.core.agent import Agent
@@ -50,11 +49,6 @@ class StatusResponse(BaseModel):
     tools: list[str]
     provider: str
     model: str
-
-
-# 模板
-def get_templates(request: Request) -> Jinja2Templates:
-    return request.app.state.templates
 
 
 def get_provider() -> BaseProvider:
@@ -159,25 +153,4 @@ async def chat_stream(request: ChatRequest):
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
-    )
-
-
-# Web UI 路由
-@router.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    """首頁"""
-    templates = get_templates(request)
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request, "system": settings.system_name},
-    )
-
-
-@router.get("/chat", response_class=HTMLResponse)
-async def chat_page(request: Request):
-    """聊天頁面"""
-    templates = get_templates(request)
-    return templates.TemplateResponse(
-        "chat.html",
-        {"request": request, "system": settings.system_name},
     )

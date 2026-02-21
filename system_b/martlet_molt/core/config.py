@@ -62,13 +62,6 @@ class ToolsConfig(BaseModel):
     mysql_enabled: bool = False
 
 
-class UIConfig(BaseModel):
-    """UI 配置"""
-
-    name: str = "web-lite"
-    version: str = "0.1.0"
-
-
 def load_yaml_config() -> dict[str, Any]:
     """
     從 settings.yaml 載入配置
@@ -142,21 +135,10 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
 
-    # 路徑設定（根據 UI 配置動態計算）
+    # 路徑設定
     base_dir: Path = Path(".")
     data_dir: Path = Path("shared/data")
     logs_dir: Path = Path("shared/logs")
-    _ui_name: str = "web-lite"  # 內部使用的 UI 名稱
-
-    @property
-    def templates_dir(self) -> Path:
-        """模板目錄（根據 UI 配置）"""
-        return Path(f"frontend/{self._ui_name}/templates")
-
-    @property
-    def static_dir(self) -> Path:
-        """靜態資源目錄（根據 UI 配置）"""
-        return Path(f"frontend/{self._ui_name}/static")
 
     # Gateway
     gateway: GatewayConfig = GatewayConfig()
@@ -169,9 +151,6 @@ class Settings(BaseSettings):
 
     # Tools
     tools: ToolsConfig = ToolsConfig()
-
-    # UI
-    ui: UIConfig = UIConfig()
 
     def __init__(self, **kwargs):
         # 先從 YAML 載入配置
@@ -203,12 +182,6 @@ class Settings(BaseSettings):
         # 如果 YAML 中有 tools 配置，更新它
         if "tools" in yaml_config:
             self.tools = ToolsConfig(**yaml_config["tools"])
-
-        # 如果 YAML 中有 ui 配置，更新它
-        if "ui" in yaml_config:
-            self.ui = UIConfig(**yaml_config["ui"])
-            # 更新 UI 名稱以動態計算路徑
-            self._ui_name = self.ui.name
 
 
 # 全域設定實例
