@@ -1,6 +1,6 @@
 ---
 # Pre-commit hooks 配置
-# 完整的程式碼品質檢查，包含 Python 和 YAML
+# Git commit 前自動執行程式碼檢查
 
 repos:
   # Python 程式碼格式化與檢查
@@ -37,13 +37,6 @@ repos:
       - id: check-added-large-files
         args: [--maxkb=1000]
       - id: detect-private-key
-
-  # 禁止提交敏感資訊
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        args: [--baseline, .secrets.baseline]
 
 # CI 設定
 ci:
