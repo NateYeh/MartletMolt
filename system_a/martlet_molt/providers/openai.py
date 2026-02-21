@@ -1,0 +1,154 @@
+"""
+OpenAI Provider
+"""
+
+import json
+from collections.abc import AsyncIterator
+
+from loguru import logger
+from openai import AsyncOpenAI
+
+from martlet_molt.core.config import settings
+from martlet_molt.providers.base import BaseProvider, Message, ToolDefinition
+
+
+class OpenAIProvider(BaseProvider):
+    """OpenAI Provider"""
+
+    name = "openai"
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        model: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ):
+        config = settings.providers.openai
+        if config is None:
+            config = type("Config", (), {})()  # Empty config
+
+        self.api_key = api_key or getattr(config, "api_key", "") or ""
+        self.base_url = base_url or getattr(config, "base_url", None)
+        self.model = model or getattr(config, "model", "gpt-4o")
+        self.max_tokens = max_tokens or getattr(config, "max_tokens", 4096)
+        self.temperature = temperature or getattr(config, "temperature", 0.7)
+
+        self.client = AsyncOpenAI(
+            api_key=self.api_key,
+            base_url=self.base_url,
+        )
+
+        self._tools: list[ToolDefinition] = []
+
+    def register_tool(self, tool: ToolDefinition) -> None:
+        """註冊工具"""
+        self._tools.append(tool)
+
+    def get_tools_definition(self) -> list[dict]:
+        """取得工具定義"""
+        if not self._tools:
+            return []
+
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                },
+            }
+            for tool in self._tools
+        ]
+
+    def get_available_models(self) -> list[str]:
+        """取得可用模型列表"""
+        return [
+            "gpt-4o",
+            "gpt-4o-mini",
+            "gpt-4-turbo",
+            "gpt-4",
+            "gpt-3.5-turbo",
+        ]
+
+    def _convert_messages(self, messages: list[Message]) -> list[dict]:
+        """轉換訊息格式"""
+        return [{"role": msg.role, "content": msg.content} for msg in messages]
+
+    async def chat(self, messages: list[Message]) -> str:
+        """同步對話"""
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=self._convert_messages(messages),
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                tools=self.get_tools_definition() or None,
+            )
+
+            return response.choices[0].message.content or ""
+
+        except Exception as e:
+            logger.exception(f"OpenAI chat failed: {e}")
+            raise
+
+    async def stream(self, messages: list[Message]) -> AsyncIterator[str]:
+        """串流對話"""
+        try:
+            stream = await self.client.chat.completions.create(
+                model=self.model,
+                messages=self._convert_messages(messages),
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                tools=self.get_tools_definition() or None,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+
+        except Exception as e:
+            logger.exception(f"OpenAI stream failed: {e}")
+            raise
+
+    async def chat_with_tools(self, messages: list[Message]) -> tuple[str, list[dict]]:
+        """
+        對話（支援工具調用）
+
+        Args:
+            messages: 訊息列表
+
+        Returns:
+            (回應內容, 工具調用列表)
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=self._convert_messages(messages),
+                max_tokens=self.max_tokens,
+                temperature=self.temperature,
+                tools=self.get_tools_definition() or None,
+            )
+
+            message = response.choices[0].message
+            content = message.content or ""
+
+            tool_calls = []
+            if message.tool_calls:
+                for call in message.tool_calls:
+                    tool_calls.append(
+                        {
+                            "id": call.id,
+                            "name": call.function.name,
+                            "arguments": json.loads(call.function.arguments),
+                        }
+                    )
+
+            return content, tool_calls
+
+        except Exception as e:
+            logger.exception(f"OpenAI chat_with_tools failed: {e}")
+            raise

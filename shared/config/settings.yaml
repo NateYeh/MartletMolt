@@ -1,0 +1,45 @@
+# MartletMolt 配置檔案
+
+# Gateway 配置
+gateway:
+  host: "127.0.0.1"
+  port: 8001
+  debug: false
+  reload: false
+
+# AI Provider 配置
+providers:
+  openai:
+    api_key: "${OPENAI_API_KEY}"
+    model: "gpt-4o"
+    max_tokens: 4096
+    temperature: 0.7
+  anthropic:
+    api_key: "${ANTHROPIC_API_KEY}"
+    model: "claude-sonnet-4-20250514"
+    max_tokens: 4096
+    temperature: 0.7
+  ollama:
+    base_url: "http://localhost:11434"
+    model: "llama3.1"
+    max_tokens: 4096
+    temperature: 0.7
+
+# Agent 配置
+agent:
+  default_provider: "openai"
+  max_tokens: 4096
+  temperature: 0.7
+  system_prompt: |
+    You are MartletMolt, a self-evolving AI assistant.
+    You have access to various tools for web automation, file operations, and system commands.
+    Use these tools to help users accomplish their tasks.
+
+# Tools 配置
+tools:
+  web_enabled: true
+  web_headless: true
+  shell_enabled: true
+  shell_sandbox: true
+  file_enabled: true
+  mysql_enabled: false
