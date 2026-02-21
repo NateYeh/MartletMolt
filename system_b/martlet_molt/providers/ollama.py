@@ -1,32 +1,221 @@
 """
-Ollama Provider (Placeholder)
+Ollama Cloud Provider
+
+支援 Ollama Cloud API (https://ollama.com)，可使用 GLM-5 等雲端模型。
+使用 requests 套件實作，方便除錯和控制。
 """
 
+import os
 from collections.abc import AsyncIterator
+from typing import Any
+
+import requests
+from loguru import logger
 
 from martlet_molt.providers.base import BaseProvider, Message
 
 
 class OllamaProvider(BaseProvider):
-    """Ollama Provider"""
+    """
+    Ollama Cloud Provider
+
+    支援 Ollama Cloud API 與本地 Ollama 服務。
+    透過設定 base_url 來區分：
+    - Cloud: base_url="https://ollama.com"
+    - Local: base_url="http://localhost:11434" (預設)
+    """
 
     name = "ollama"
 
-    def __init__(self):
-        # TODO: Implement
-        pass
+    def __init__(
+        self,
+        api_key: str = "",
+        base_url: str = "https://ollama.com",
+        model: str = "glm-5",
+        max_tokens: int = 4096,
+        temperature: float = 0.7,
+        timeout: int = 120,
+        **kwargs: Any,
+    ) -> None:
+        """
+        初始化 Ollama Provider
+
+        Args:
+            api_key: Ollama Cloud API Key (從環境變數 OLLAMA_API_KEY 讀取)
+            base_url: API 端點，預設為 Ollama Cloud
+            model: 模型名稱，預設為 glm-5
+            max_tokens: 最大輸出 token 數
+            temperature: 溫度參數
+            timeout: 請求逾時秒數
+            **kwargs: 其他參數
+        """
+        self.api_key = api_key or os.environ.get("OLLAMA_API_KEY", "")
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.timeout = timeout
+
+        # 建立 session
+        self._session = requests.Session()
+        if self.api_key:
+            self._session.headers.update({"Authorization": f"Bearer {self.api_key}"})
+
+        logger.info(f"OllamaProvider initialized: base_url={base_url}, model={model}")
+
+    def _convert_messages(self, messages: list[Message]) -> list[dict[str, str]]:
+        """
+        將內部 Message 格式轉換為 Ollama API 格式
+
+        Args:
+            messages: 內部訊息列表
+
+        Returns:
+            Ollama API 格式的訊息列表
+        """
+        return [{"role": msg.role, "content": msg.content} for msg in messages]
+
+    def _chat_sync(self, messages: list[dict[str, str]], stream: bool = False) -> dict:
+        """
+        同步呼叫 Ollama API
+
+        Args:
+            messages: 訊息列表
+            stream: 是否使用串流模式
+
+        Returns:
+            API 回應字典
+        """
+        url = f"{self.base_url}/api/chat"
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "stream": stream,
+        }
+
+        # 注意: GLM-5 模型在傳入 options 時可能觸發 thinking 模式
+        # 導致 content 為空，因此這裡不傳入 options
+        #
+        # 如果需要控制 max_tokens 或 temperature，可以在需要時啟用：
+        # payload["options"] = {
+        #     "num_predict": self.max_tokens,
+        #     "temperature": self.temperature,
+        # }
+
+        logger.debug(f"POST {url} with model={self.model}, stream={stream}")
+
+        response = self._session.post(url, json=payload, timeout=self.timeout)
+        response.raise_for_status()
+
+        return response.json()
 
     async def chat(self, messages: list[Message]) -> str:
-        # TODO: Implement
-        raise NotImplementedError("Ollama provider not yet implemented")
+        """
+        同步對話
+
+        Args:
+            messages: 訊息列表
+
+        Returns:
+            AI 回應字串
+        """
+        try:
+            ollama_messages = self._convert_messages(messages)
+            logger.debug(f"Sending chat request to {self.model}")
+
+            data = self._chat_sync(ollama_messages)
+
+            # 解析回應
+            message = data.get("message", {})
+            content = message.get("content", "")
+            logger.debug(f"Received response: {len(content)} chars")
+            return content
+
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
+            raise RuntimeError(f"Ollama API error: {e.response.status_code}") from e
+        except Exception:
+            logger.exception(f"Ollama chat error: {self.model}")
+            raise
 
     async def stream(self, messages: list[Message]) -> AsyncIterator[str]:
-        # TODO: Implement
-        raise NotImplementedError("Ollama provider not yet implemented")
-        yield ""  # type: ignore
+        """
+        串流對話
+
+        Args:
+            messages: 訊息列表
+
+        Yields:
+            AI 回應片段
+        """
+        try:
+            import json
+
+            ollama_messages = self._convert_messages(messages)
+            url = f"{self.base_url}/api/chat"
+            payload = {
+                "model": self.model,
+                "messages": ollama_messages,
+                "stream": True,
+            }
+
+            # 注意: GLM-5 模型在傳入 options 時可能觸發 thinking 模式
+            # 導致 content 為空，因此這裡不傳入 options
+
+            logger.debug(f"Starting stream to {self.model}")
+
+            response = self._session.post(url, json=payload, timeout=self.timeout, stream=True)
+            response.raise_for_status()
+
+            for line in response.iter_lines():
+                if line:
+                    try:
+                        data = json.loads(line.decode("utf-8"))
+                        message = data.get("message", {})
+                        content = message.get("content", "")
+                        if content:
+                            yield content
+                    except json.JSONDecodeError:
+                        continue
+
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
+            raise RuntimeError(f"Ollama API error: {e.response.status_code}") from e
+        except Exception:
+            logger.exception(f"Ollama stream error: {self.model}")
+            raise
 
     def get_tools_definition(self) -> list[dict]:
+        """
+        取得工具定義（Ollama 格式）
+
+        Returns:
+            工具定義列表
+        """
+        # TODO: 根據註冊的 Tools 生成定義
         return []
 
     def get_available_models(self) -> list[str]:
-        return ["llama3.1", "llama3.2", "codellama", "mistral"]
+        """
+        取得可用模型列表
+
+        Returns:
+            模型 ID 列表
+        """
+        try:
+            url = f"{self.base_url}/api/tags"
+            response = self._session.get(url, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            models = data.get("models", [])
+            return [m.get("name", "") for m in models if m.get("name")]
+        except Exception:
+            logger.warning("Failed to list models, returning defaults")
+            return [
+                "glm-5",
+                "glm-4.7",
+                "llama3.1",
+                "llama3.2",
+                "codellama",
+                "mistral",
+            ]

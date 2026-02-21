@@ -74,8 +74,54 @@ class OpenAIProvider(BaseProvider):
         ]
 
     def _convert_messages(self, messages: list[Message]) -> list[dict]:
-        """轉換訊息格式"""
-        return [{"role": msg.role, "content": msg.content} for msg in messages]
+        """
+        轉換訊息格式
+
+        支援 OpenAI Tool Calling 格式:
+        - user/assistant/system: {"role": "...", "content": "..."}
+        - assistant with tool_calls: {"role": "assistant", "content": "...", "tool_calls": [...]}
+        - tool: {"role": "tool", "content": "...", "tool_call_id": "..."}
+
+        Args:
+            messages: 訊息列表
+
+        Returns:
+            OpenAI API 格式的訊息列表
+        """
+        api_messages: list[dict] = []
+
+        for msg in messages:
+            # 基本訊息
+            if msg.role in ["user", "system"]:
+                api_messages.append(
+                    {
+                        "role": msg.role,
+                        "content": msg.content,
+                    }
+                )
+
+            # Assistant 訊息
+            elif msg.role == "assistant":
+                msg_dict: dict = {
+                    "role": msg.role,
+                    "content": msg.content,
+                }
+                # 如果有 tool_calls，加入
+                if msg.tool_calls:
+                    msg_dict["tool_calls"] = msg.tool_calls
+                api_messages.append(msg_dict)
+
+            # Tool 結果訊息
+            elif msg.role == "tool":
+                api_messages.append(
+                    {
+                        "role": msg.role,
+                        "content": msg.content,
+                        "tool_call_id": msg.tool_call_id,
+                    }
+                )
+
+        return api_messages
 
     async def chat(self, messages: list[Message]) -> str:
         """同步對話"""

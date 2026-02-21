@@ -4,6 +4,7 @@ Provider 抽象基類
 
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -11,8 +12,11 @@ from pydantic import BaseModel
 class Message(BaseModel):
     """訊息模型"""
 
-    role: str  # "user" | "assistant" | "system"
+    role: str  # "user" | "assistant" | "system" | "tool"
     content: str
+    name: str | None = None  # for tool messages
+    tool_call_id: str | None = None  # for tool messages
+    tool_calls: list[dict] | None = None  # for assistant messages with tool calls
 
 
 class ToolDefinition(BaseModel):
@@ -73,3 +77,26 @@ class BaseProvider(ABC):
             模型 ID 列表
         """
         pass
+
+    def register_tool(self, tool: ToolDefinition) -> None:
+        """
+        註冊工具（可選實作）
+
+        Args:
+            tool: 工具定義
+        """
+        _ = tool  # 可選實作，子類可覆寫
+
+    async def chat_with_tools(self, messages: list[Message]) -> tuple[str, list[dict[str, Any]]]:
+        """
+        對話（支援工具調用，可選實作）
+
+        Args:
+            messages: 訊息列表
+
+        Returns:
+            (回應內容, 工具調用列表)
+        """
+        # 預設實作：調用普通 chat，返回空的 tool_calls
+        response = await self.chat(messages)
+        return response, []

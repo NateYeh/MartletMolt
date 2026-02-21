@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from martlet_molt.core.config import settings
+from martlet_molt.providers.base import Message as ProviderMessage
 
 
 class Message(BaseModel):
@@ -20,6 +21,7 @@ class Message(BaseModel):
     content: str
     name: str | None = None  # for tool messages
     tool_call_id: str | None = None
+    tool_calls: list[dict] | None = None  # for assistant messages with tool calls
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 
@@ -61,9 +63,52 @@ class Session(BaseModel):
         self.updated_at = datetime.now().isoformat()
         return tool_call
 
-    def get_messages_for_api(self) -> list[dict]:
-        """取得用於 API 的訊息列表"""
-        return [{"role": msg.role, "content": msg.content} for msg in self.messages if msg.role in ["user", "assistant", "system"]]
+    def get_messages_for_api(self) -> list[ProviderMessage]:
+        """
+        取得用於 API 的訊息列表
+
+        支援 OpenAI Tool Calling 格式:
+        - assistant 訊息可能包含 tool_calls
+        - tool 訊息需要 tool_call_id
+
+        Returns:
+            ProviderMessage 列表
+        """
+        api_messages: list[ProviderMessage] = []
+
+        for msg in self.messages:
+            # 基本訊息
+            if msg.role in ["user", "system"]:
+                api_messages.append(
+                    ProviderMessage(
+                        role=msg.role,
+                        content=msg.content,
+                    )
+                )
+
+            # Assistant 訊息（可能包含 tool_calls）
+            elif msg.role == "assistant":
+                # 查找與此訊息關聯的 tool_calls
+                # (在 add_message 時若有多個 tool_calls，會用最後一批)
+                api_messages.append(
+                    ProviderMessage(
+                        role=msg.role,
+                        content=msg.content,
+                    )
+                )
+
+            # Tool 結果訊息
+            elif msg.role == "tool":
+                api_messages.append(
+                    ProviderMessage(
+                        role=msg.role,
+                        content=msg.content,
+                        name=msg.name,
+                        tool_call_id=msg.tool_call_id,
+                    )
+                )
+
+        return api_messages
 
 
 class SessionManager:
