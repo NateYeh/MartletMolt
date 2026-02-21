@@ -317,6 +317,76 @@ ruff format .
 | `shell` | 執行 Shell 命令 |
 | `mysql` | 執行 SQL |
 
+### Tool Calling 流程
+
+當用戶透過 CLI 或 Web 與 AI 對話時，Agent 會自動處理 Tool Calling：
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Agent.chat() 流程                           │
+├─────────────────────────────────────────────────────────────────┤
+│  1. 註冊 Tools 到 Provider                                      │
+│     └─> ToolRegistry.register_defaults()                        │
+│     └─> Provider.register_tool()                                │
+│                                                                 │
+│  2. 添加用戶訊息到 Session                                       │
+│     └─> session.add_message("user", user_input)                 │
+│                                                                 │
+│  3. Tool Calling Loop (最多 10 次迭代)                          │
+│     ┌────────────────────────────────────────────────────────┐  │
+│     │  a. Provider.chat_with_tools(messages)                 │  │
+│     │     └─> 返回 (content, tool_calls)                     │  │
+│     │                                                        │  │
+│     │  b. 如果沒有 tool_calls → 返回結果                      │  │
+│     │                                                        │  │
+│     │  c. 添加 assistant 訊息（包含 tool_calls）              │  │
+│     │     └─> session.add_message("assistant", content,      │  │
+│     │                               tool_calls=[...])        │  │
+│     │                                                        │  │
+│     │  d. 執行每個 Tool Call                                  │  │
+│     │     └─> ToolRegistry.execute(name, arguments)          │  │
+│     │     └─> session.add_message("tool", result,            │  │
+│     │                               tool_call_id=...)        │  │
+│     │                                                        │  │
+│     │  e. 繼續迴圈，帶著 tool 結果再次調用 Provider           │  │
+│     └────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  4. 返回最終 AI 回應                                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 訊息格式範例
+
+```python
+# 用戶訊息
+Message(role="user", content="請列出 docs 資料夾的內容")
+
+# AI 請求執行 Tool
+Message(
+    role="assistant",
+    content="",
+    tool_calls=[{
+        "id": "call_123",
+        "type": "function",
+        "function": {
+            "name": "shell",
+            "arguments": '{"command": "ls -la docs"}'
+        }
+    }]
+)
+
+# Tool 執行結果
+Message(
+    role="tool",
+    content='{"stdout": "total 52\\ndrwxrwxrwx..."}',
+    name="shell",
+    tool_call_id="call_123"
+)
+
+# AI 最終回應
+Message(role="assistant", content="docs 資料夾包含 AI_CONTEXT.md 和 skills_plan.md...")
+```
+
 ---
 
 ## 安全設計
