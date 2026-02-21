@@ -47,6 +47,7 @@ dev = [
 ]
 
 [project.scripts]
+martlet = "martlet:main"
 martlet-a = "system_a.martlet_molt.cli:main"
 martlet-b = "system_b.martlet_molt.cli:main"
 orchestrator = "orchestrator.main:main"
@@ -57,9 +58,11 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["orchestrator", "system_a", "system_b"]
+artifacts = ["martlet.py"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+    "martlet.py",
     "orchestrator/",
     "system_a/",
     "system_b/",

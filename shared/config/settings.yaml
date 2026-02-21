@@ -1,5 +1,8 @@
 # MartletMolt 配置檔案
 
+# 系統切換 (a 或 b)
+active_system: "a"
+
 # Gateway 配置
 gateway:
   host: "127.0.0.1"
