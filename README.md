@@ -14,30 +14,50 @@ MartletMolt 是一個具有 **自我修改、自我重啟、自我進化** 能�
 | **♻️ Zero-Downtime** | A/B 架構確保升級過程服務不中斷 |
 | **🛡️ Auto-Rollback** | 進化失敗自動回滾，確保系統穩定 |
 | **🕷️ Web Automation** | 基於 Playwright 的網頁自動化，無需截圖即可理解網頁 |
+| **🌐 Web UI** | 內建 Web 介面，支援即時對話與 Tool 結果展示 |
 | **🔧 Extensible Tools** | 模組化的 Tool 系統，易於擴展 |
 
 ---
 
 ## 🏗️ 架構設計
 
-### A/B 雙系統架構
+### 整體架構
 
 ```
-┌─────────────────────────────────────────────────┐
-│                  Orchestrator                    │
-│        (獨立守護程序，管理 A/B 生命週期)           │
-└─────────────────────────────────────────────────┘
-                      │
-        ┌─────────────┴─────────────┐
-        ▼                           ▼
-┌───────────────┐           ┌───────────────┐
-│   System A    │           │   System B    │
-│   🟢 Running  │           │   ⚫ Inactive  │
-│   (服務中)     │           │   (待命備份)   │
-└───────────────┘           └───────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        Web UI (Browser)                         │
+│            HTMX + Tailwind CSS (Server-Side Rendering)          │
+└─────────────────────────────────────────────────────────────────┘
+                                 │
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Orchestrator (Guardian)                     │
+│           獨立守護程序，管理 A/B 系統生命週期 (不可被修改)         │
+└─────────────────────────────────────────────────────────────────┘
+                                 │
+              ┌──────────────────┴──────────────────┐
+              ▼                                     ▼
+┌───────────────────────────┐           ┌───────────────────────────┐
+│        System A           │           │        System B           │
+│  ┌─────────────────────┐  │           │  ┌─────────────────────┐  │
+│  │   Gateway Server    │  │           │  │   Gateway Server    │  │
+│  │   (HTTP + WebSocket)│  │           │  │   (HTTP + WebSocket)│  │
+│  └─────────────────────┘  │           │  └─────────────────────┘  │
+│  ┌─────────────────────┐  │           │  ┌─────────────────────┐  │
+│  │   Agent Runtime     │  │           │  │   Agent Runtime     │  │
+│  │   (AI + Tools)      │  │           │  │   (AI + Tools)      │  │
+│  └─────────────────────┘  │           │  └─────────────────────┘  │
+│  ┌─────────────────────┐  │           │  ┌─────────────────────┐  │
+│  │   Provider Layer    │  │           │  │   Provider Layer    │  │
+│  │   (OpenAI/Anthropic)│  │           │  │   (OpenAI/Anthropic)│  │
+│  └─────────────────────┘  │           │  └─────────────────────┘  │
+│                           │           │                           │
+│       🟢 Running          │           │       ⚫ Inactive          │
+│       (服務中)             │           │       (待命備份)          │
+└───────────────────────────┘           └───────────────────────────┘
 ```
 
-### 自我進化流程
+### A/B 雙系統切換流程
 
 ```
 運行中系統 A                  待命系統 B
@@ -73,7 +93,7 @@ MartletMolt 是一個具有 **自我修改、自我重啟、自我進化** 能�
 
 ```
 MartletMolt/
-├── orchestrator/                    # 🎯 核心調度器 (獨立運行，不可被 AI 修改)
+├── orchestrator/                    # 🎯 守護程序 (不可被 AI 修改)
 │   ├── __init__.py
 │   ├── manager.py                  # A/B 系統生命週期管理
 │   ├── health_check.py            # 健康檢查
@@ -107,11 +127,28 @@ MartletMolt/
 │       │   ├── shell.py           # Shell 命令
 │       │   ├── file_read.py       # 檔案讀取
 │       │   ├── file_write.py      # 檔案寫入
+│       │   ├── file_replace.py    # 檔案區塊替換
 │       │   └── mysql.py           # 資料庫操作
-│       ├── api/
+│       ├── gateway/
 │       │   ├── __init__.py
-│       │   ├── routes.py          # REST API
-│       │   └── websocket.py       # WebSocket (串流輸出)
+│       │   ├── server.py          # Gateway 主伺服器
+│       │   ├── routes.py          # REST API 路由
+│       │   ├── websocket.py       # WebSocket 處理
+│       │   └── middleware.py      # 中間件
+│       ├── channels/
+│       │   ├── __init__.py
+│       │   ├── base.py            # Channel 抽象基類
+│       │   └── web/
+│       │       ├── __init__.py
+│       │       ├── channel.py     # Web Channel 實現
+│       │       └── templates/     # HTML 模板
+│       ├── templates/              # Jinja2 模板 (Web UI)
+│       │   ├── base.html
+│       │   ├── chat.html
+│       │   └── components/
+│       ├── static/                 # 靜態資源
+│       │   ├── css/
+│       │   └── js/
 │       ├── cli.py                 # CLI 入口
 │       └── main.py                # 服務入口
 │
@@ -119,10 +156,20 @@ MartletMolt/
 │   └── martlet_molt/
 │       └── ...
 │
+├── frontend/                        # 前端資源 (可選，進階用途)
+│   ├── src/
+│   │   ├── components/            # 元件
+│   │   ├── hooks/                 # Hooks
+│   │   └── App.tsx
+│   ├── package.json
+│   └── vite.config.ts
+│
 ├── shared/                          # 共享資源
-│   ├── config/                     # 共用配置
+│   ├── config/
 │   │   └── settings.yaml          # 主配置檔
-│   ├── data/                       # 對話歷史、會話資料
+│   ├── data/
+│   │   ├── sessions/              # 對話歷史 (JSONL)
+│   │   └── transcripts/           # 對話記錄
 │   └── logs/                       # 系統日誌
 │
 ├── state/                           # 系統狀態
@@ -131,7 +178,12 @@ MartletMolt/
 ├── docs/                            # 文件
 │   ├── architecture.md             # 架構說明
 │   ├── tools.md                    # Tools 文檔
-│   └── api.md                      # API 文檔
+│   ├── api.md                      # API 文檔
+│   └── AI_CONTEXT.md               # AI 友善的專案說明
+│
+├── tests/                           # 測試
+│   ├── unit/
+│   └── e2e/
 │
 ├── orchestrator.py                  # Orchestrator 入口點
 ├── pyproject.toml                   # Python 專案配置
@@ -148,6 +200,8 @@ MartletMolt/
 | **後端框架** | FastAPI | 非同步、自動 OpenAPI 文檔 |
 | **AI SDK** | httpx + OpenAI SDK | 支援串流輸出 |
 | **網頁自動化** | Playwright (sync_api) | 支援 DOM/Accessibility Tree |
+| **Web UI** | HTMX + Tailwind CSS | Server-Side Rendering，前端極簡 |
+| **模板引擎** | Jinja2 | HTML 模板渲染 |
 | **CLI** | Typer + Rich | 美觀的終端介面 |
 | **配置管理** | Pydantic Settings | 型別安全 |
 | **日誌** | Loguru | 簡潔強大 |
@@ -155,52 +209,43 @@ MartletMolt/
 
 ---
 
-## 🚀 開發路線圖
+## 🌐 Web UI 功能
 
-### Phase 1 - MVP (最小可用版本)
+### 聊天介面
 
-- [ ] 專案結構搭建
-- [ ] Orchestrator 核心框架
-- [ ] System A/B 基礎架構
-- [ ] Provider 抽象層 (OpenAI 支援)
-- [ ] Tool 系統基礎
-- [ ] 網頁自動化 Tools
-- [ ] CLI 介面
-- [ ] 健康檢查與自動回滾
+- 即時對話（WebSocket 串流輸出）
+- Markdown 渲染
+- 程式碼高亮
+- 對話歷史
 
-### Phase 2 - 功能增強
+### Tool 結果展示
 
-- [ ] 更多 Provider (Anthropic, Ollama)
-- [ ] 更多 Tools (Shell, File, MySQL)
-- [ ] 多輪對話歷史管理
-- [ ] 串流輸出 (SSE/WebSocket)
-- [ ] REST API 服務模式
+- 網頁操作結果（DOM、截圖）
+- Shell 命令輸出
+- 檔案操作結果
+- 錯誤訊息展示
 
-### Phase 3 - 進化能力
+### 系統狀態
 
-- [ ] 自我修改機制
-- [ ] A/B 系統切換
-- [ ] 程式碼同步
-- [ ] 版本追蹤
-
-### Phase 4 - 可選功能
-
-- [ ] Web UI (React/Vue)
-- [ ] 多用戶支援
-- [ ] Plugin 系統
+- 當前活躍系統（A/B）
+- 健康檢查狀態
+- 版本資訊
+- 進化歷史
 
 ---
 
-## 📖 設計原則
+## 📖 核心設計
 
 ### Orchestrator 保護機制
 
 Orchestrator 是系統的守護者，必須保持穩定：
 
-1. **最小化設計** - 只負責生命週期管理，不包含業務邏輯
-2. **不可修改** - AI Tools 無法修改 `/orchestrator/` 下的檔案
-3. **獨立運行** - 作為獨立程序，不受 System A/B 影響
-4. **安全邊界** - 需要特權權限才能修改 Orchestrator
+| 規則 | 說明 |
+|------|------|
+| **永不修改** | Orchestrator 是守護者，不能被 AI 修改 |
+| **最小化** | 只負責生命週期管理，不包含業務邏輯 |
+| **獨立運行** | 可以是獨立程序或 systemd service |
+| **安全機制** | 需要特權才能修改 Orchestrator |
 
 ### Tool 系統設計
 
@@ -212,13 +257,17 @@ from typing import Any
 from pydantic import BaseModel
 
 class ToolResult(BaseModel):
+    """Tool 執行結果"""
     success: bool
     data: Any = None
     error: str = ""
+    metadata: dict = {}  # 額外資訊（執行時間、資源使用等）
 
 class BaseTool(ABC):
+    """Tool 抽象基類"""
     name: str
     description: str
+    parameters_schema: dict  # JSON Schema
     
     @abstractmethod
     def execute(self, **kwargs) -> ToolResult:
@@ -237,11 +286,118 @@ class BaseTool(ABC):
 | 元素定位 | CSS Selector | 精確定位操作 |
 | Console Log | `page.on("console")` | JavaScript 錯誤追蹤 |
 
+### Channel 抽象
+
+支援多種通訊管道：
+
+```python
+from abc import ABC, abstractmethod
+from typing import AsyncIterator
+from pydantic import BaseModel
+
+class Message(BaseModel):
+    """訊息模型"""
+    id: str
+    role: str  # "user" | "assistant" | "system"
+    content: str
+    metadata: dict = {}
+
+class BaseChannel(ABC):
+    """Channel 抽象基類"""
+    id: str
+    name: str
+    
+    @abstractmethod
+    async def receive(self) -> AsyncIterator[Message]:
+        """接收訊息"""
+        pass
+    
+    @abstractmethod
+    async def send(self, message: Message) -> bool:
+        """發送訊息"""
+        pass
+    
+    @abstractmethod
+    async def stream(self, message: Message) -> AsyncIterator[str]:
+        """串流發送"""
+        pass
+```
+
+---
+
+## 🚀 開發路線圖
+
+### Phase 1 - 後端核心
+
+- [ ] 專案結構搭建
+- [ ] Orchestrator 核心框架
+- [ ] System A/B 基礎架構
+- [ ] Provider 抽象層 (OpenAI 支援)
+- [ ] Tool 系統基礎
+- [ ] 網頁自動化 Tools
+- [ ] CLI 介面
+- [ ] 健康檢查與自動回滾
+
+### Phase 2 - Web UI
+
+- [ ] Gateway Server (HTTP + WebSocket)
+- [ ] HTMX + Tailwind Web UI
+- [ ] 聊天介面
+- [ ] Tool 結果展示
+- [ ] 系統狀態頁面
+
+### Phase 3 - 功能增強
+
+- [ ] 更多 Provider (Anthropic, Ollama)
+- [ ] 更多 Tools (Shell, File, MySQL)
+- [ ] 多輪對話歷史管理
+- [ ] 串流輸出
+- [ ] Session 管理
+
+### Phase 4 - 自我進化
+
+- [ ] 自我修改機制
+- [ ] A/B 系統切換
+- [ ] 程式碼同步
+- [ ] 版本追蹤
+- [ ] 進化歷史記錄
+
+### Phase 5 - 進階功能
+
+- [ ] 進階 Web UI (React/Vue)
+- [ ] 多用戶支援
+- [ ] Plugin 系統
+- [ ] 其他 Channel (Telegram, Discord...)
+
+---
+
+## 📋 CLI 命令規劃
+
+| 命令 | 用途 |
+|------|------|
+| `martlet start` | 啟動服務 |
+| `martlet stop` | 停止服務 |
+| `martlet status` | 查看狀態 |
+| `martlet chat` | CLI 對話模式 |
+| `martlet evolve` | 觸發進化流程 |
+| `martlet switch` | 手動切換 A/B |
+| `martlet doctor` | 診斷問題 |
+| `martlet config` | 配置管理 |
+
+---
+
+## 🔒 安全設計
+
+- **Orchestrator 保護** - 檔案權限 + 程式邏輯雙重保護
+- **沙箱執行** - Shell 指令在受限環境執行
+- **審批機制** - 危險操作需要明確審批
+- **敏感資料** - API Key 等憑證獨立存儲，不進版控
+
 ---
 
 ## 🎯 專案名稱由來
 
-**Martlet** (馬丁鳥) 是一種傳說中沒有腳的燕子，象徵永不停歇的追求。  
+**Martlet** (馬丁鳥) 是一種傳說中沒有腳的燕子，象徵永不停歇的追求。
 **Molt** (蛻變) 代表自我更新、不斷進化。
 
 MartletMolt = 永不停歇的自我進化。
