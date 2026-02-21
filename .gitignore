@@ -53,18 +53,15 @@ Config/
 .env.*
 !.env.example
 
-# Conversation records & Sessions
-shared/data/sessions/
-shared/data/transcripts/
-*.jsonl
+# Shared data (runtime data: sessions, logs, state)
+shared/
+!shared/README.md
 
 # Logs
-shared/logs/
 logs/
 *.log
 
-# State files
-shared/state/
+# Lock files
 *.lock
 
 # Local config overrides
