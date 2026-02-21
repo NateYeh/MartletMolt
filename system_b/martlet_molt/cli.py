@@ -13,7 +13,7 @@ from rich.table import Table
 from martlet_molt import __version__
 from martlet_molt.core.agent import Agent
 from martlet_molt.core.config import settings
-from martlet_molt.core.session import session_manager
+from martlet_molt.core.session import Session, session_manager
 from martlet_molt.gateway.server import run_server
 from martlet_molt.providers.base import BaseProvider
 from martlet_molt.providers.ollama import OllamaProvider
@@ -178,6 +178,42 @@ def config() -> None:
     console.print(f"  File Enabled: {settings.tools.file_enabled}")
 
 
+def _display_history(session: "Session", max_messages: int = 10) -> None:
+    """
+    顯示會話歷史記錄
+
+    Args:
+        session: 會話實例
+        max_messages: 最多顯示的訊息數量
+    """
+    # 過濾出 user 和 assistant 訊息
+    display_messages = [
+        msg for msg in session.messages if msg.role in ("user", "assistant") and msg.content
+    ]
+
+    if not display_messages:
+        return
+
+    # 顯示最近 N 條
+    recent_messages = display_messages[-max_messages:] if len(display_messages) > max_messages else display_messages
+
+    console.print()
+    console.print(Panel(f"[bold]📝 最近 {len(recent_messages)} 條對話記錄[/bold]", border_style="yellow"))
+
+    for msg in recent_messages:
+        if msg.role == "user":
+            # 用戶訊息 - 藍色
+            content = msg.content[:200] + "..." if len(msg.content) > 200 else msg.content
+            console.print(f"[bold blue]You:[/bold blue] {content}")
+        elif msg.role == "assistant":
+            # AI 訊息 - 綠色，簡潔顯示
+            content = msg.content[:150] + "..." if len(msg.content) > 150 else msg.content
+            content = content.replace("\n", " ").strip()  # 壓縮為一行
+            console.print(f"[bold green]Assistant:[/bold green] {content}")
+
+    console.print()
+
+
 async def _chat_once(message: str, session_id: str, provider_name: str) -> None:
     """
     單次對話模式
@@ -188,8 +224,8 @@ async def _chat_once(message: str, session_id: str, provider_name: str) -> None:
         provider_name: Provider 名稱
     """
     console.print(f"[bold green]MartletMolt v{__version__}[/bold green]")
+    console.print(f"[dim]Session: {session_id}[/dim]")
     console.print(f"[dim]Provider: {provider_name}[/dim]")
-    console.print()
 
     try:
         # 建立 Provider 和 Agent
@@ -200,6 +236,10 @@ async def _chat_once(message: str, session_id: str, provider_name: str) -> None:
         # 添加系統提示（如果是新會話）
         if len(session.messages) == 0 and settings.agent.system_prompt:
             agent.add_system_prompt(settings.agent.system_prompt)
+
+        # 顯示歷史記錄
+        if len(session.messages) > 0:
+            _display_history(session, max_messages=10)
 
         # 顯示用戶訊息
         console.print(Panel(message, title="[bold blue]You[/bold blue]", border_style="blue"))
@@ -234,7 +274,6 @@ async def _chat_interactive(session_id: str, provider_name: str) -> None:
     console.print(f"[bold green]MartletMolt v{__version__}[/bold green]")
     console.print(f"[dim]Session: {session_id}[/dim]")
     console.print(f"[dim]Provider: {provider_name}[/dim]")
-    console.print()
     console.print("[dim]Commands: 'exit' to quit, 'clear' to clear session, 'new' for new session[/dim]")
     console.print()
 
@@ -247,6 +286,10 @@ async def _chat_interactive(session_id: str, provider_name: str) -> None:
         # 添加系統提示（如果是新會話）
         if len(session.messages) == 0 and settings.agent.system_prompt:
             agent.add_system_prompt(settings.agent.system_prompt)
+
+        # 顯示歷史記錄
+        if len(session.messages) > 0:
+            _display_history(session, max_messages=20)
 
         while True:
             try:

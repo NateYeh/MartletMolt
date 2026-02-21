@@ -257,10 +257,35 @@ orchestrator:
 | `martlet stop` | 停止服務 |
 | `martlet status` | 查看狀態 |
 | `martlet chat` | CLI 對話模式 |
+| `martlet chat -i` | 互動對話模式 |
+| `martlet chat -s <session_id>` | 指定會話 ID |
 | `martlet evolve` | 觸發進化流程 |
 | `martlet switch` | 手動切換 A/B |
 | `martlet doctor` | 診斷問題 |
 | `martlet config` | 配置管理 |
+
+### 對話歷史功能
+
+MartletMolt 會自動保存對話歷史，並在下次對話時顯示最近的記錄：
+
+```bash
+# 第一次對話（會建立 default 會話）
+martlet chat "你好"
+
+# 第二次對話（會顯示之前的歷史記錄）
+martlet chat "我剛才問了什麼"
+
+# 使用特定會話 ID
+martlet chat "開始新任務" --session project_analysis
+
+# 繼續特定會話
+martlet chat "繼續分析" --session project_analysis
+```
+
+**歷史記錄顯示規則：**
+- 單次對話模式：顯示最近 10 條對話記錄
+- 互動對話模式：顯示最近 20 條對話記錄
+- 長訊息會自動截斷顯示
 
 ---
 
