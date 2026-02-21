@@ -41,12 +41,12 @@
 | `orchestrator/` | 守護程序，管理 A/B 生命週期（**不可被 AI 修改**） |
 | `system_a/` | A 系統（純後端，Agent/Tools/Providers） |
 | `system_b/` | B 系統（純後端，Agent/Tools/Providers） |
-| `shared/` | 共享資源 |
-| `shared/config/` | 共享配置 |
-| `shared/data/` | 共享資料（sessions.db） |
+| `frontend/` | **前端專案（HTML 模板、靜態資源）** |
+| `frontend/templates/` | HTML 模板（Jinja2） |
+| `frontend/static/` | 靜態資源（CSS、JS） |
+| `shared/` | 運行時共享資料 |
+| `shared/data/` | 共享資料（sessions、transcripts） |
 | `shared/logs/` | 共享日誌 |
-| `shared/templates/` | **前端模板（集中管理，AI 可直接修改）** |
-| `shared/static/` | **前端靜態資源（集中管理，AI 可直接修改）** |
 | `state/` | 系統狀態（當前活躍系統） |
 
 ---
@@ -79,15 +79,21 @@ system_a/martlet_molt/
 ├── cli.py                 # CLI 入口
 └── main.py                # 服務入口
 
-# 前端資源集中在 shared/ 目錄，AI 可直接修改
-shared/
+# 前端專案獨立於後端
+frontend/
 ├── templates/              # HTML 模板 (Jinja2)
 │   ├── index.html
-│   ├── chat.html
-│   └── components/
+│   └── chat.html
 └── static/                 # 靜態資源
     ├── css/
     └── js/
+
+# 運行時共享資料
+shared/
+├── data/                   # 資料檔案
+│   ├── sessions/          # 對話歷史 (JSONL)
+│   └── transcripts/       # 逐字稿
+└── logs/                   # 系統日誌
 ```
 
 ---
@@ -208,6 +214,7 @@ Config/.env                    # API Keys (敏感，不上傳 Git)
 Templates/settings.yaml.example # 配置範本
 Templates/.env.example         # 環境變數範本
 shared/data/sessions/          # 對話歷史 (JSONL，敏感)
+shared/logs/                   # 系統日誌
 state/state.json               # 系統狀態
 ```
 

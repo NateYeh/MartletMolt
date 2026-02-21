@@ -139,8 +139,8 @@ class Settings(BaseSettings):
     base_dir: Path = Path(".")
     data_dir: Path = Path("shared/data")
     logs_dir: Path = Path("shared/logs")
-    templates_dir: Path = Path("shared/templates")
-    static_dir: Path = Path("shared/static")
+    templates_dir: Path = Path("frontend/templates")
+    static_dir: Path = Path("frontend/static")
 
     # Gateway
     gateway: GatewayConfig = GatewayConfig()
