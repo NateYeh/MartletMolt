@@ -5,6 +5,7 @@ Ollama Cloud Provider
 使用 requests 套件實作，方便除錯和控制。
 """
 
+import json
 import os
 from collections.abc import AsyncIterator
 from typing import Any
@@ -12,7 +13,7 @@ from typing import Any
 import requests
 from loguru import logger
 
-from martlet_molt.providers.base import BaseProvider, Message
+from martlet_molt.providers.base import BaseProvider, Message, ToolDefinition
 
 
 class OllamaProvider(BaseProvider):
@@ -55,6 +56,7 @@ class OllamaProvider(BaseProvider):
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.timeout = timeout
+        self._tools: list[ToolDefinition] = []
 
         # 建立 session
         self._session = requests.Session()
@@ -63,9 +65,46 @@ class OllamaProvider(BaseProvider):
 
         logger.info(f"OllamaProvider initialized: base_url={base_url}, model={model}")
 
-    def _convert_messages(self, messages: list[Message]) -> list[dict[str, str]]:
+    def register_tool(self, tool: ToolDefinition) -> None:
+        """
+        註冊工具
+
+        Args:
+            tool: 工具定義
+        """
+        self._tools.append(tool)
+        logger.debug(f"Tool registered: {tool.name}")
+
+    def get_tools_definition(self) -> list[dict]:
+        """
+        取得工具定義（Ollama/OpenAI 格式）
+
+        Returns:
+            工具定義列表
+        """
+        if not self._tools:
+            return []
+
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                },
+            }
+            for tool in self._tools
+        ]
+
+    def _convert_messages(self, messages: list[Message]) -> list[dict]:
         """
         將內部 Message 格式轉換為 Ollama API 格式
+
+        支援 OpenAI-style Tool Calling:
+        - user/system: {"role": "...", "content": "..."}
+        - assistant with tool_calls: {"role": "assistant", "content": "...", "tool_calls": [...]}
+        - tool: {"role": "tool", "content": "...", "name": "..."}
 
         Args:
             messages: 內部訊息列表
@@ -73,25 +112,64 @@ class OllamaProvider(BaseProvider):
         Returns:
             Ollama API 格式的訊息列表
         """
-        return [{"role": msg.role, "content": msg.content} for msg in messages]
+        ollama_messages: list[dict] = []
 
-    def _chat_sync(self, messages: list[dict[str, str]], stream: bool = False) -> dict:
+        for msg in messages:
+            # 基本訊息
+            if msg.role in ["user", "system"]:
+                ollama_messages.append({
+                    "role": msg.role,
+                    "content": msg.content,
+                })
+
+            # Assistant 訊息
+            elif msg.role == "assistant":
+                msg_dict: dict = {
+                    "role": msg.role,
+                    "content": msg.content,
+                }
+                # 如果有 tool_calls，加入
+                if msg.tool_calls:
+                    msg_dict["tool_calls"] = msg.tool_calls
+                ollama_messages.append(msg_dict)
+
+            # Tool 結果訊息
+            elif msg.role == "tool":
+                ollama_messages.append({
+                    "role": msg.role,
+                    "content": msg.content,
+                    "name": msg.name,
+                })
+
+        return ollama_messages
+
+    def _chat_sync(
+        self,
+        messages: list[dict],
+        stream: bool = False,
+        tools: list[dict] | None = None,
+    ) -> dict:
         """
         同步呼叫 Ollama API
 
         Args:
             messages: 訊息列表
             stream: 是否使用串流模式
+            tools: 工具定義列表
 
         Returns:
             API 回應字典
         """
         url = f"{self.base_url}/api/chat"
-        payload = {
+        payload: dict = {
             "model": self.model,
             "messages": messages,
             "stream": stream,
         }
+
+        # 添加 tools
+        if tools:
+            payload["tools"] = tools
 
         # 注意: GLM-5 模型在傳入 options 時可能觸發 thinking 模式
         # 導致 content 為空，因此這裡不傳入 options
@@ -102,7 +180,7 @@ class OllamaProvider(BaseProvider):
         #     "temperature": self.temperature,
         # }
 
-        logger.debug(f"POST {url} with model={self.model}, stream={stream}")
+        logger.debug(f"POST {url} with model={self.model}, stream={stream}, tools={len(tools) if tools else 0}")
 
         response = self._session.post(url, json=payload, timeout=self.timeout)
         response.raise_for_status()
@@ -123,7 +201,10 @@ class OllamaProvider(BaseProvider):
             ollama_messages = self._convert_messages(messages)
             logger.debug(f"Sending chat request to {self.model}")
 
-            data = self._chat_sync(ollama_messages)
+            data = self._chat_sync(
+                ollama_messages,
+                tools=self.get_tools_definition() or None,
+            )
 
             # 解析回應
             message = data.get("message", {})
@@ -138,6 +219,53 @@ class OllamaProvider(BaseProvider):
             logger.exception(f"Ollama chat error: {self.model}")
             raise
 
+    async def chat_with_tools(
+        self, messages: list[Message]
+    ) -> tuple[str, list[dict[str, Any]]]:
+        """
+        對話（支援工具調用）
+
+        Args:
+            messages: 訊息列表
+
+        Returns:
+            (回應內容, 工具調用列表)
+        """
+        try:
+            ollama_messages = self._convert_messages(messages)
+            tools = self.get_tools_definition()
+
+            logger.debug(f"Sending chat_with_tools request to {self.model}, tools={len(tools)}")
+
+            data = self._chat_sync(
+                ollama_messages,
+                tools=tools or None,
+            )
+
+            # 解析回應
+            message = data.get("message", {})
+            content = message.get("content", "")
+
+            # 解析 tool_calls
+            tool_calls = []
+            if "tool_calls" in message:
+                for call in message["tool_calls"]:
+                    tool_calls.append({
+                        "id": call.get("id", ""),
+                        "name": call.get("function", {}).get("name", ""),
+                        "arguments": call.get("function", {}).get("arguments", {}),
+                    })
+                logger.info(f"AI requested {len(tool_calls)} tool calls")
+
+            return content, tool_calls
+
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
+            raise RuntimeError(f"Ollama API error: {e.response.status_code}") from e
+        except Exception:
+            logger.exception(f"Ollama chat_with_tools error: {self.model}")
+            raise
+
     async def stream(self, messages: list[Message]) -> AsyncIterator[str]:
         """
         串流對話
@@ -149,15 +277,18 @@ class OllamaProvider(BaseProvider):
             AI 回應片段
         """
         try:
-            import json
-
             ollama_messages = self._convert_messages(messages)
             url = f"{self.base_url}/api/chat"
-            payload = {
+            payload: dict = {
                 "model": self.model,
                 "messages": ollama_messages,
                 "stream": True,
             }
+
+            # 添加 tools
+            tools = self.get_tools_definition()
+            if tools:
+                payload["tools"] = tools
 
             # 注意: GLM-5 模型在傳入 options 時可能觸發 thinking 模式
             # 導致 content 為空，因此這裡不傳入 options
@@ -184,16 +315,6 @@ class OllamaProvider(BaseProvider):
         except Exception:
             logger.exception(f"Ollama stream error: {self.model}")
             raise
-
-    def get_tools_definition(self) -> list[dict]:
-        """
-        取得工具定義（Ollama 格式）
-
-        Returns:
-            工具定義列表
-        """
-        # TODO: 根據註冊的 Tools 生成定義
-        return []
 
     def get_available_models(self) -> list[str]:
         """
