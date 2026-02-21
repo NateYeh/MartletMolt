@@ -20,14 +20,15 @@ providers:
     max_tokens: 4096
     temperature: 0.7
   ollama:
-    base_url: "http://localhost:11434"
-    model: "llama3.1"
+    api_key: "${OLLAMA_API_KEY}"
+    base_url: "https://ollama.com"
+    model: "glm-5:cloud"
     max_tokens: 4096
     temperature: 0.7
 
 # Agent 配置
 agent:
-  default_provider: "openai"
+  default_provider: "ollama"
   max_tokens: 4096
   temperature: 0.7
   system_prompt: |
