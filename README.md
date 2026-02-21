@@ -362,7 +362,15 @@ class BaseChannel(ABC):
 - [ ] 版本追蹤
 - [ ] 進化歷史記錄
 
-### Phase 5 - 進階功能
+### Phase 5 - SKILLS 系統
+
+- [ ] Skill 基礎架構 (BaseSkill, SkillManager)
+- [ ] Skill 安全沙箱 (SkillExecutor)
+- [ ] Skill 動態載入 (SkillLoader)
+- [ ] 內建 Skills (code_review, web_search, etc.)
+- [ ] 詳見 [SKILLS 計畫](docs/skills_plan.md)
+
+### Phase 6 - 進階功能
 
 - [ ] 進階 Web UI (React/Vue)
 - [ ] 多用戶支援
