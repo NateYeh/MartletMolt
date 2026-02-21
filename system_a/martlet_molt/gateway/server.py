@@ -47,13 +47,13 @@ def create_app() -> FastAPI:
     # 註冊路由
     app.include_router(router)
 
-    # 靜態檔案
-    static_dir = settings.base_dir / "static"
+    # 靜態檔案（使用共享目錄）
+    static_dir = settings.static_dir
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-    # 模板
-    templates_dir = settings.base_dir / "templates"
+    # 模板（使用共享目錄）
+    templates_dir = settings.templates_dir
     if templates_dir.exists():
         app.state.templates = Jinja2Templates(directory=str(templates_dir))
 

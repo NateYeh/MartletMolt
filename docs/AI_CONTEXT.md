@@ -39,15 +39,19 @@
 | 路徑 | 用途 |
 |------|------|
 | `orchestrator/` | 守護程序，管理 A/B 生命週期（**不可被 AI 修改**） |
-| `system_a/` | A 系統（完整服務） |
-| `system_b/` | B 系統（完整服務） |
-| `shared/` | 共享配置、資料、日誌 |
+| `system_a/` | A 系統（純後端，Agent/Tools/Providers） |
+| `system_b/` | B 系統（純後端，Agent/Tools/Providers） |
+| `shared/` | 共享資源 |
+| `shared/config/` | 共享配置 |
+| `shared/data/` | 共享資料（sessions.db） |
+| `shared/logs/` | 共享日誌 |
+| `shared/templates/` | **前端模板（集中管理，AI 可直接修改）** |
+| `shared/static/` | **前端靜態資源（集中管理，AI 可直接修改）** |
 | `state/` | 系統狀態（當前活躍系統） |
-| `frontend/` | 前端資源（可選，進階用途） |
 
 ---
 
-## System A/B 內部結構
+## System A/B 內部結構（純後端）
 
 ```
 system_a/martlet_molt/
@@ -72,10 +76,18 @@ system_a/martlet_molt/
 │   └── websocket.py       # WebSocket
 ├── channels/               # 通訊通道
 │   └── web/               # Web Channel
-├── templates/              # HTML 模板 (Jinja2)
-├── static/                 # 靜態資源
 ├── cli.py                 # CLI 入口
 └── main.py                # 服務入口
+
+# 前端資源集中在 shared/ 目錄，AI 可直接修改
+shared/
+├── templates/              # HTML 模板 (Jinja2)
+│   ├── index.html
+│   ├── chat.html
+│   └── components/
+└── static/                 # 靜態資源
+    ├── css/
+    └── js/
 ```
 
 ---
