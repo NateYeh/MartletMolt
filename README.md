@@ -103,44 +103,31 @@ MartletMolt/
 │
 ├── system_a/                        # A 系統 (純後端)
 │   └── martlet_molt/
-│       ├── __init__.py
 │       ├── core/
-│       │   ├── __init__.py
 │       │   ├── agent.py           # AI Agent 核心
 │       │   ├── session.py         # 會話管理
 │       │   └── config.py          # 系統配置
 │       ├── providers/
-│       │   ├── __init__.py
 │       │   ├── base.py            # Provider 抽象基類
 │       │   ├── openai.py          # OpenAI Provider
 │       │   ├── anthropic.py       # Anthropic Provider
 │       │   └── ollama.py          # Ollama Provider
 │       ├── tools/
-│       │   ├── __init__.py
 │       │   ├── base.py            # Tool 抽象基類
 │       │   ├── web_navigate.py    # 網頁導航
 │       │   ├── web_extract.py     # 內容提取
 │       │   ├── web_click.py       # 點擊操作
 │       │   ├── web_fill.py        # 表單填寫
 │       │   ├── web_evaluate.py    # JS 執行
-│       │   ├── web_screenshot.py  # 網頁截圖 (可選)
 │       │   ├── shell.py           # Shell 命令
 │       │   ├── file_read.py       # 檔案讀取
-│       │   ├── file_write.py      # 檔案寫入
-│       │   ├── file_replace.py    # 檔案區塊替換
-│       │   └── mysql.py           # 資料庫操作
+│       │   └── file_write.py      # 檔案寫入
 │       ├── gateway/
-│       │   ├── __init__.py
 │       │   ├── server.py          # Gateway 主伺服器
 │       │   ├── routes.py          # REST API 路由
-│       │   ├── websocket.py       # WebSocket 處理
-│       │   └── middleware.py      # 中間件
+│       │   └── websocket.py       # WebSocket 處理
 │       ├── channels/
-│       │   ├── __init__.py
-│       │   ├── base.py            # Channel 抽象基類
-│       │   └── web/
-│       │       ├── __init__.py
-│       │       └── channel.py     # Web Channel 實現
+│       │   └── web/               # Web Channel
 │       ├── cli.py                 # CLI 入口
 │       └── main.py                # 服務入口
 │
@@ -148,38 +135,46 @@ MartletMolt/
 │   └── martlet_molt/
 │       └── ...
 │
-├── shared/                          # 🌐 共享資源 (AI 可直接修改)
-│   ├── config/
-│   │   └── settings.yaml          # 主配置檔
-│   ├── data/
-│   │   ├── sessions.db            # 對話歷史 (SQLite)
-│   │   └── transcripts/           # 對話記錄
-│   ├── logs/                       # 系統日誌
-│   ├── templates/                  # 🎨 前端模板 (Jinja2)
+├── frontend/                        # 🎨 前端專案
+│   ├── templates/                  # HTML 模板 (Jinja2)
 │   │   ├── index.html
-│   │   ├── chat.html
-│   │   └── components/
-│   └── static/                     # 🎨 前端靜態資源
+│   │   └── chat.html
+│   └── static/                     # 靜態資源
 │       ├── css/
 │       └── js/
 │
-├── state/                           # 系統狀態
-│   └── state.json                  # {active: "a", version: {...}}
+├── shared/                          # 🔄 運行時共享資料 (不上傳 Git)
+│   ├── data/
+│   │   ├── sessions/               # 對話歷史 (JSONL)
+│   │   └── transcripts/            # 逐字稿
+│   ├── logs/                       # 系統日誌
+│   └── state/
+│       └── state.json              # 當前活躍系統狀態
 │
-├── docs/                            # 文件
-│   ├── architecture.md             # 架構說明
-│   ├── tools.md                    # Tools 文檔
-│   ├── api.md                      # API 文檔
-│   └── AI_CONTEXT.md               # AI 友善的專案說明
+├── Config/                          # ⚙️ 實際配置 (敏感，不上傳 Git)
+│   ├── settings.yaml               # 主配置
+│   └── .env                        # API Keys
+│
+├── config_templates/                # 📋 配置範本
+│   ├── settings.yaml.example
+│   ├── .env.example
+│   └── good_example.yaml
+│
+├── docs/                            # 📚 文件
+│   ├── AI_CONTEXT.md               # AI 友善的專案說明
+│   ├── dual_container_architecture.md
+│   └── skills_plan.md
 │
 ├── tests/                           # 測試
 │   ├── unit/
 │   └── e2e/
 │
+├── scripts/                         # 開發工具腳本
+│
+├── martlet.py                       # 🚀 統一 CLI 入口
 ├── orchestrator.py                  # Orchestrator 入口點
 ├── pyproject.toml                   # Python 專案配置
-├── README.md                        # 專案說明
-└── .gitignore                       # Git 忽略設定
+└── README.md                        # 專案說明
 ```
 
 ---

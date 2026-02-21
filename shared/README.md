@@ -9,7 +9,9 @@ shared/
 ├── data/              # 共享資料
 │   ├── sessions/     # 對話歷史 (JSONL)
 │   └── transcripts/  # 逐字稿
-└── logs/             # 系統日誌
+├── logs/             # 系統日誌
+└── state/            # 系統狀態
+    └── state.json    # 當前活躍系統
 ```
 
 ## 設計理念

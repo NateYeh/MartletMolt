@@ -72,7 +72,7 @@ class OrchestratorSettings(BaseSettings):
     )
 
     # 狀態檔案路徑
-    state_file: Path = Path("state/state.json")
+    state_file: Path = Path("shared/state/state.json")
 
 
 # 全域設定實例

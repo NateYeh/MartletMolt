@@ -44,10 +44,12 @@
 | `frontend/` | **前端專案（HTML 模板、靜態資源）** |
 | `frontend/templates/` | HTML 模板（Jinja2） |
 | `frontend/static/` | 靜態資源（CSS、JS） |
-| `shared/` | 運行時共享資料 |
+| `shared/` | 運行時共享資料（不上傳 Git） |
 | `shared/data/` | 共享資料（sessions、transcripts） |
 | `shared/logs/` | 共享日誌 |
-| `state/` | 系統狀態（當前活躍系統） |
+| `shared/state/` | 系統狀態（當前活躍系統） |
+| `Config/` | 實際配置檔（敏感，不上傳 Git） |
+| `config_templates/` | 配置範本（供用戶參考） |
 
 ---
 
@@ -93,7 +95,9 @@ shared/
 ├── data/                   # 資料檔案
 │   ├── sessions/          # 對話歷史 (JSONL)
 │   └── transcripts/       # 逐字稿
-└── logs/                   # 系統日誌
+├── logs/                   # 系統日誌
+└── state/                  # 系統狀態
+    └── state.json          # 當前活躍系統
 ```
 
 ---
@@ -209,13 +213,15 @@ class BaseChannel(ABC):
 ### 配置檔位置
 
 ```
-Config/settings.yaml           # 主配置 (敏感，不上傳 Git)
-Config/.env                    # API Keys (敏感，不上傳 Git)
-Templates/settings.yaml.example # 配置範本
-Templates/.env.example         # 環境變數範本
-shared/data/sessions/          # 對話歷史 (JSONL，敏感)
+Config/settings.yaml           # 主配置（敏感，不上傳 Git）
+Config/.env                    # API Keys（敏感，不上傳 Git）
+config_templates/              # 配置範本（供用戶參考）
+├── settings.yaml.example      # 配置範例
+├── .env.example               # 環境變數範例
+└── good_example.yaml          # 完整範例
+shared/data/sessions/          # 對話歷史（JSONL，敏感）
 shared/logs/                   # 系統日誌
-state/state.json               # 系統狀態
+shared/state/state.json        # 系統狀態
 ```
 
 ### 配置結構
