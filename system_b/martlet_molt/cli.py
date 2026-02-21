@@ -187,9 +187,7 @@ def _display_history(session: "Session", max_messages: int = 10) -> None:
         max_messages: 最多顯示的訊息數量
     """
     # 過濾出 user 和 assistant 訊息
-    display_messages = [
-        msg for msg in session.messages if msg.role in ("user", "assistant") and msg.content
-    ]
+    display_messages = [msg for msg in session.messages if msg.role in ("user", "assistant") and msg.content]
 
     if not display_messages:
         return
@@ -254,7 +252,7 @@ async def _chat_once(message: str, session_id: str, provider_name: str) -> None:
 
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
-        console.print("[dim]Please check your configuration in shared/config/settings.yaml[/dim]")
+        console.print("[dim]Please check your configuration in Config/settings.yaml[/dim]")
     except Exception:
         console.print("[red]An error occurred during chat.[/red]")
 
@@ -331,7 +329,7 @@ async def _chat_interactive(session_id: str, provider_name: str) -> None:
 
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
-        console.print("[dim]Please check your configuration in shared/config/settings.yaml[/dim]")
+        console.print("[dim]Please check your configuration in Config/settings.yaml[/dim]")
     except Exception:
         console.print("[red]An error occurred during chat.[/red]")
 

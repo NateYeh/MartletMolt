@@ -117,10 +117,12 @@ class OllamaProvider(BaseProvider):
         for msg in messages:
             # 基本訊息
             if msg.role in ["user", "system"]:
-                ollama_messages.append({
-                    "role": msg.role,
-                    "content": msg.content,
-                })
+                ollama_messages.append(
+                    {
+                        "role": msg.role,
+                        "content": msg.content,
+                    }
+                )
 
             # Assistant 訊息
             elif msg.role == "assistant":
@@ -135,11 +137,13 @@ class OllamaProvider(BaseProvider):
 
             # Tool 結果訊息
             elif msg.role == "tool":
-                ollama_messages.append({
-                    "role": msg.role,
-                    "content": msg.content,
-                    "name": msg.name,
-                })
+                ollama_messages.append(
+                    {
+                        "role": msg.role,
+                        "content": msg.content,
+                        "name": msg.name,
+                    }
+                )
 
         return ollama_messages
 
@@ -219,9 +223,7 @@ class OllamaProvider(BaseProvider):
             logger.exception(f"Ollama chat error: {self.model}")
             raise
 
-    async def chat_with_tools(
-        self, messages: list[Message]
-    ) -> tuple[str, list[dict[str, Any]]]:
+    async def chat_with_tools(self, messages: list[Message]) -> tuple[str, list[dict[str, Any]]]:
         """
         對話（支援工具調用）
 
@@ -250,11 +252,13 @@ class OllamaProvider(BaseProvider):
             tool_calls = []
             if "tool_calls" in message:
                 for call in message["tool_calls"]:
-                    tool_calls.append({
-                        "id": call.get("id", ""),
-                        "name": call.get("function", {}).get("name", ""),
-                        "arguments": call.get("function", {}).get("arguments", {}),
-                    })
+                    tool_calls.append(
+                        {
+                            "id": call.get("id", ""),
+                            "name": call.get("function", {}).get("name", ""),
+                            "arguments": call.get("function", {}).get("arguments", {}),
+                        }
+                    )
                 logger.info(f"AI requested {len(tool_calls)} tool calls")
 
             return content, tool_calls

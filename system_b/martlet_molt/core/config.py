@@ -71,9 +71,9 @@ def load_yaml_config() -> dict[str, Any]:
     """
     # 尋找配置檔路徑
     config_paths = [
-        Path("shared/config/settings.yaml"),
-        Path("../shared/config/settings.yaml"),
-        Path("/mnt/work/py_works/external_projects/MartletMolt/shared/config/settings.yaml"),
+        Path("Config/settings.yaml"),
+        Path("../Config/settings.yaml"),
+        Path("/mnt/work/py_works/external_projects/MartletMolt/Config/settings.yaml"),
     ]
 
     for config_path in config_paths:

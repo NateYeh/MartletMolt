@@ -1,15 +1,19 @@
 ---
-# MartletMolt 配置檔案
+# MartletMolt Configuration Template
+# Copy this file to Config/settings.yaml and customize
 
-# 系統切換 (a 或 b)
+# System switch (a or b)
 active_system: a
-# Gateway 配置
+
+# Gateway configuration
 gateway:
   host: 127.0.0.1
   port: 8001
   debug: false
   reload: false
-# AI Provider 配置
+
+# AI Provider configuration
+# API keys are loaded from environment variables
 providers:
   openai:
     api_key: ${OPENAI_API_KEY}
@@ -27,7 +31,8 @@ providers:
     model: glm-5:cloud
     max_tokens: 4096
     temperature: 0.7
-# Agent 配置
+
+# Agent configuration
 agent:
   default_provider: ollama
   max_tokens: 4096
@@ -36,7 +41,8 @@ agent:
     You are MartletMolt, a self-evolving AI assistant.
     You have access to various tools for web automation, file operations, and system commands.
     Use these tools to help users accomplish their tasks.
-# Tools 配置
+
+# Tools configuration
 tools:
   web_enabled: true
   web_headless: true

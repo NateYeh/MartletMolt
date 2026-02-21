@@ -44,21 +44,45 @@ htmlcov/
 .mypy_cache/
 .pytype/
 
-# Logs
-*.log
-logs/
+# === Sensitive Data - NEVER COMMIT ===
+# Config (API Keys, secrets, runtime settings)
+Config/
 
-# Local config
+# Environment variables
 .env
-.env.local
+.env.*
+!.env.example
+
+# Conversation records & Sessions
+shared/data/sessions/
+shared/data/transcripts/
+*.jsonl
+
+# Logs
+shared/logs/
+logs/
+*.log
+
+# State files
+state/
+*.lock
+
+# Local config overrides
 *.local.yaml
+*.local.json
+
+# Secret files
+*secret*
+*key*
+*.pem
+*.p12
+credentials.json
 
 # Playwright
 playwright/.local-browsers/
 
-# Project specific
-shared/logs/*.log
-state/*.lock
+# Ruff cache
+.ruff_cache/
 
 # OS
 .DS_Store

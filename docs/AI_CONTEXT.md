@@ -191,15 +191,18 @@ class BaseChannel(ABC):
 ### 配置檔位置
 
 ```
-shared/config/settings.yaml    # 主配置
-shared/data/sessions/          # 對話歷史 (JSONL)
+Config/settings.yaml           # 主配置 (敏感，不上傳 Git)
+Config/.env                    # API Keys (敏感，不上傳 Git)
+Templates/settings.yaml.example # 配置範本
+Templates/.env.example         # 環境變數範本
+shared/data/sessions/          # 對話歷史 (JSONL，敏感)
 state/state.json               # 系統狀態
 ```
 
 ### 配置結構
 
 ```yaml
-# shared/config/settings.yaml
+# Config/settings.yaml
 gateway:
   host: "0.0.0.0"
   port: 8000
@@ -444,7 +447,7 @@ Message(role="assistant", content="docs 資料夾包含 AI_CONTEXT.md 和 skills
 | Gateway 啟動失敗 | `system_a/martlet_molt/gateway/` |
 | Tool 執行問題 | `system_a/martlet_molt/tools/` |
 | Provider 調用失敗 | `system_a/martlet_molt/providers/` |
-| 配置問題 | `shared/config/settings.yaml` |
+| 配置問題 | `Config/settings.yaml` |
 
 ---
 

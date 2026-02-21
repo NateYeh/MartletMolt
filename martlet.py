@@ -25,9 +25,9 @@ def load_active_system() -> str:
     """
     # 尋找配置檔路徑
     config_paths = [
-        Path(__file__).parent / "shared" / "config" / "settings.yaml",
-        Path("shared/config/settings.yaml"),
-        Path("../shared/config/settings.yaml"),
+        Path(__file__).parent / "Config" / "settings.yaml",
+        Path("Config/settings.yaml"),
+        Path("../Config/settings.yaml"),
     ]
 
     for config_path in config_paths:
@@ -76,6 +76,7 @@ def main() -> None:
     except Exception as e:
         print(f"執行錯誤: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
