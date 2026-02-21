@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from martlet_molt.core.config import settings
+from martlet_molt.providers.base import Message as ProviderMessage
 
 
 class Message(BaseModel):
@@ -61,9 +62,13 @@ class Session(BaseModel):
         self.updated_at = datetime.now().isoformat()
         return tool_call
 
-    def get_messages_for_api(self) -> list[dict]:
+    def get_messages_for_api(self) -> list[ProviderMessage]:
         """取得用於 API 的訊息列表"""
-        return [{"role": msg.role, "content": msg.content} for msg in self.messages if msg.role in ["user", "assistant", "system"]]
+        return [
+            ProviderMessage(role=msg.role, content=msg.content)
+            for msg in self.messages
+            if msg.role in ["user", "assistant", "system"]
+        ]
 
 
 class SessionManager:
