@@ -41,9 +41,10 @@
 | `orchestrator/` | 守護程序，管理 A/B 生命週期（**不可被 AI 修改**） |
 | `system_a/` | A 系統（純後端，Agent/Tools/Providers） |
 | `system_b/` | B 系統（純後端，Agent/Tools/Providers） |
-| `frontend/` | **前端專案（HTML 模板、靜態資源）** |
-| `frontend/templates/` | HTML 模板（Jinja2） |
-| `frontend/static/` | 靜態資源（CSS、JS） |
+| `frontend/` | **前端專案目錄（支援多 UI 專案）** |
+| `frontend/web-lite/` | 輕量級 UI（Tailwind + HTMX + Jinja2） |
+| `frontend/web-lite/templates/` | HTML 模板（Jinja2） |
+| `frontend/web-lite/static/` | 靜態資源（CSS、JS） |
 | `shared/` | 運行時共享資料（不上傳 Git） |
 | `shared/data/` | 共享資料（sessions、transcripts） |
 | `shared/logs/` | 共享日誌 |
@@ -81,14 +82,19 @@ system_a/martlet_molt/
 ├── cli.py                 # CLI 入口
 └── main.py                # 服務入口
 
-# 前端專案獨立於後端
+# 前端專案獨立於後端（支援多 UI 專案）
 frontend/
-├── templates/              # HTML 模板 (Jinja2)
-│   ├── index.html
-│   └── chat.html
-└── static/                 # 靜態資源
-    ├── css/
-    └── js/
+├── README.md               # 前端總覽說明
+├── web-lite/               # 輕量級 UI（目前使用中）
+│   ├── README.md           # web-lite 說明文件
+│   ├── templates/          # HTML 模板 (Jinja2)
+│   │   ├── components/     # 可重用元件
+│   │   ├── index.html      # 首頁
+│   │   └── chat.html       # 聊天頁面
+│   └── static/             # 靜態資源
+│       ├── css/
+│       └── js/
+└── (未來專案)/             # 第二個 UI 專案（規劃中）
 
 # 運行時共享資料
 shared/
@@ -228,6 +234,15 @@ shared/state/state.json        # 系統狀態
 
 ```yaml
 # Config/settings.yaml
+
+# 系統切換 (a 或 b)
+active_system: a
+
+# UI 配置
+ui:
+  name: web-lite          # 前端專案名稱
+  version: 0.1.0          # 版本號
+
 gateway:
   host: "0.0.0.0"
   port: 8000
