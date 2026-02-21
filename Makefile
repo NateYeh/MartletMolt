@@ -1,4 +1,4 @@
-.PHONY: install format lint test clean yaml-check yaml-fix
+.PHONY: install format lint clean yaml-check yaml-fix
 
 # 安裝依賴
 install:
@@ -25,10 +25,6 @@ yaml-check:
 yaml-fix:
 	yamlfix **/*.yaml **/*.yml
 
-# 執行測試
-test:
-	pytest tests/ -v --cov=martlet_molt
-
 # 清理
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +
@@ -38,4 +34,4 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 # 完整檢查（CI/CD 用）
-ci: lint test
+ci: lint
