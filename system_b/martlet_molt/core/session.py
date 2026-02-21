@@ -50,22 +50,73 @@ class Session(BaseModel):
     tool_calls: list[ToolCall] = []
     metadata: dict = {}
 
+    # 私有屬性：SessionManager 引用（使用 PrivateAttr）
+    _manager: "SessionManager | None" = None
+
+    model_config = {"arbitrary_types_allowed": True}
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # 初始化私有屬性
+        object.__setattr__(self, "_manager", None)
+
     def add_message(self, role: str, content: str, **kwargs) -> Message:
-        """添加訊息（兼容舊接口，但不建議直接使用）"""
-        message = Message(role=role, content=content, **kwargs)
-        self.messages.append(message)
-        self.updated_at = datetime.now().isoformat()
+        """
+        添加訊息
+
+        如果 Session 有關聯的 SessionManager，會自動保存到數據庫。
+
+        Args:
+            role: 角色（user/assistant/system/tool）
+            content: 消息內容
+            **kwargs: 其他參數（name, tool_call_id, tool_calls）
+
+        Returns:
+            創建的消息對象
+        """
+        # 如果有 manager，使用 manager 的方法（會保存到數據庫）
+        if self._manager:
+            message = self._manager.add_message(self.id, role, content, **kwargs)
+            # 同步更新內存中的 messages
+            self.messages.append(message)
+            self.updated_at = datetime.now().isoformat()
+        else:
+            # 向後兼容：只更新內存
+            message = Message(role=role, content=content, **kwargs)
+            self.messages.append(message)
+            self.updated_at = datetime.now().isoformat()
+
         return message
 
     def add_tool_call(self, name: str, arguments: dict) -> ToolCall:
-        """添加工具調用（兼容舊接口，但不建議直接使用）"""
-        tool_call = ToolCall(
-            id=f"call_{uuid.uuid4().hex[:8]}",
-            name=name,
-            arguments=arguments,
-        )
-        self.tool_calls.append(tool_call)
-        self.updated_at = datetime.now().isoformat()
+        """
+        添加工具調用
+
+        如果 Session 有關聯的 SessionManager，會自動保存到數據庫。
+
+        Args:
+            name: 工具名稱
+            arguments: 工具參數
+
+        Returns:
+            創建的工具調用對象
+        """
+        # 如果有 manager，使用 manager 的方法（會保存到數據庫）
+        if self._manager:
+            tool_call = self._manager.add_tool_call(self.id, name, arguments)
+            # 同步更新內存中的 tool_calls
+            self.tool_calls.append(tool_call)
+            self.updated_at = datetime.now().isoformat()
+        else:
+            # 向後兼容：只更新內存
+            tool_call = ToolCall(
+                id=f"call_{uuid.uuid4().hex[:8]}",
+                name=name,
+                arguments=arguments,
+            )
+            self.tool_calls.append(tool_call)
+            self.updated_at = datetime.now().isoformat()
+
         return tool_call
 
     def get_messages_for_api(self) -> list[ProviderMessage]:
@@ -205,7 +256,10 @@ class SessionManager:
 
     def create(self, session_id: str | None = None) -> Session:
         """建立新會話"""
+        """建立新會話"""
         session = Session(id=session_id) if session_id else Session()
+        # 設置 manager 引用
+        object.__setattr__(session, "_manager", self)
 
         with self._get_connection() as conn:
             cursor = conn.cursor()
@@ -231,7 +285,11 @@ class SessionManager:
         """取得會話"""
         # 先檢查緩存
         if session_id in self._sessions:
-            return self._sessions[session_id]
+            session = self._sessions[session_id]
+            # 確保緩存的會話有 _manager 引用
+            if not hasattr(session, "_manager") or session._manager is None:
+                object.__setattr__(session, "_manager", self)
+            return session
 
         # 從數據庫載入
         session = self._load_session(session_id)
@@ -352,7 +410,7 @@ class SessionManager:
                     )
                 )
 
-            return Session(
+            session = Session(
                 id=row["id"],
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
@@ -360,6 +418,9 @@ class SessionManager:
                 tool_calls=tool_calls,
                 metadata=json.loads(row["metadata"] or "{}"),
             )
+            # 設置 manager 引用
+            object.__setattr__(session, "_manager", self)
+            return session
 
     def list_sessions(self) -> list[str]:
         """列出所有會話 ID"""
@@ -558,7 +619,7 @@ class SessionManager:
             cursor.execute(
                 f"""
                 UPDATE messages
-                SET {', '.join(updates)}
+                SET {", ".join(updates)}
                 WHERE id = ? AND session_id = ?
                 """,
                 params,
@@ -576,12 +637,8 @@ class SessionManager:
                 role=role if role is not None else row["role"],
                 content=content if content is not None else (row["content"] or ""),
                 name=name if name is not None else row["name"],
-                tool_call_id=tool_call_id
-                if tool_call_id is not None
-                else row["tool_call_id"],
-                tool_calls=tool_calls
-                if tool_calls is not None
-                else (json.loads(row["tool_calls"]) if row["tool_calls"] else None),
+                tool_call_id=tool_call_id if tool_call_id is not None else row["tool_call_id"],
+                tool_calls=tool_calls if tool_calls is not None else (json.loads(row["tool_calls"]) if row["tool_calls"] else None),
                 timestamp=row["timestamp"],
             )
 
