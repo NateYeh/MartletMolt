@@ -1,44 +1,41 @@
+---
 # MartletMolt 配置檔案
 
 # 系統切換 (a 或 b)
-active_system: "a"
-
+active_system: a
 # Gateway 配置
 gateway:
-  host: "127.0.0.1"
+  host: 127.0.0.1
   port: 8001
   debug: false
   reload: false
-
 # AI Provider 配置
 providers:
   openai:
-    api_key: "${OPENAI_API_KEY}"
-    model: "gpt-4o"
+    api_key: ${OPENAI_API_KEY}
+    model: gpt-4o
     max_tokens: 4096
     temperature: 0.7
   anthropic:
-    api_key: "${ANTHROPIC_API_KEY}"
-    model: "claude-sonnet-4-20250514"
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-sonnet-4-20250514
     max_tokens: 4096
     temperature: 0.7
   ollama:
-    api_key: "${OLLAMA_API_KEY}"
-    base_url: "https://ollama.com"
-    model: "glm-5:cloud"
+    api_key: ${OLLAMA_API_KEY}
+    base_url: https://ollama.com
+    model: glm-5:cloud
     max_tokens: 4096
     temperature: 0.7
-
 # Agent 配置
 agent:
-  default_provider: "ollama"
+  default_provider: ollama
   max_tokens: 4096
   temperature: 0.7
   system_prompt: |
     You are MartletMolt, a self-evolving AI assistant.
     You have access to various tools for web automation, file operations, and system commands.
     Use these tools to help users accomplish their tasks.
-
 # Tools 配置
 tools:
   web_enabled: true

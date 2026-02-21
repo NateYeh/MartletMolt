@@ -2,21 +2,67 @@
 CLI 入口
 """
 
-from typing import Annotated
+import asyncio
 
 import typer
 from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.table import Table
 
 from martlet_molt import __version__
+from martlet_molt.core.agent import Agent
 from martlet_molt.core.config import settings
+from martlet_molt.core.session import session_manager
 from martlet_molt.gateway.server import run_server
+from martlet_molt.providers.base import BaseProvider
+from martlet_molt.providers.ollama import OllamaProvider
+from martlet_molt.providers.openai import OpenAIProvider
 
 # Rich console
 console = Console()
 
 # Typer app
 app = typer.Typer(name="martlet", help="MartletMolt - Self-Evolving AI Agent System")
+
+
+def get_provider(provider_name: str | None = None) -> BaseProvider:
+    """
+    根據配置取得 Provider 實例
+
+    Args:
+        provider_name: Provider 名稱，若為 None 則使用配置中的預設值
+
+    Returns:
+        Provider 實例
+
+    Raises:
+        ValueError: Provider 未配置或不支援
+    """
+    name = provider_name or settings.agent.default_provider
+    provider_config = getattr(settings.providers, name, None)
+
+    if not provider_config:
+        raise ValueError(f"Provider '{name}' not configured")
+
+    if name == "ollama":
+        return OllamaProvider(
+            api_key=provider_config.api_key,
+            base_url=provider_config.base_url or "https://ollama.com",
+            model=provider_config.model,
+            max_tokens=provider_config.max_tokens,
+            temperature=provider_config.temperature,
+        )
+    elif name == "openai":
+        return OpenAIProvider(
+            api_key=provider_config.api_key,
+            base_url=provider_config.base_url,
+            model=provider_config.model,
+            max_tokens=provider_config.max_tokens,
+            temperature=provider_config.temperature,
+        )
+    else:
+        raise ValueError(f"Unsupported provider: {name}")
 
 
 @app.command()
@@ -42,20 +88,29 @@ def start(
 
 @app.command()
 def chat(
-    session_id: Annotated[str, typer.Option("--session", "-s")] = "default",
-    provider: str = typer.Option("openai", "--provider", "-p", help="AI Provider"),
+    message: str = typer.Argument(None, help="對話訊息（單次對話模式）"),
+    session_id: str = typer.Option("default", "--session", "-s", help="會話 ID"),
+    provider: str = typer.Option("", "--provider", "-p", help="AI Provider"),
+    interactive: bool = typer.Option(False, "--interactive", "-i", help="進入互動模式"),
 ) -> None:
-    """CLI 對話模式"""
-    console.print(f"[bold green]MartletMolt v{__version__}[/bold green]")
-    console.print(f"[dim]Session: {session_id}[/dim]")
-    console.print(f"[dim]Provider: {provider}[/dim]")
-    console.print()
-    console.print("[dim]Type 'exit' to quit, 'clear' to clear session.[/dim]")
-    console.print()
+    """
+    CLI 對話模式
 
-    # TODO: 實現 CLI 對話
-    console.print("[red]CLI chat mode not yet implemented[/red]")
-    console.print("[dim]Use 'martlet start' to start the web server first.[/dim]")
+    用法:
+        martlet chat "你好"              # 單次對話
+        martlet chat 你好                # 單次對話（無空格可省略引號）
+        martlet chat -i                  # 互動模式
+        martlet chat -p openai "你好"    # 指定 Provider
+    """
+    provider_name = provider or settings.agent.default_provider
+
+    # 單次對話模式
+    if message and not interactive:
+        asyncio.run(_chat_once(message, session_id, provider_name))
+        return
+
+    # 互動模式
+    asyncio.run(_chat_interactive(session_id, provider_name))
 
 
 @app.command()
@@ -121,6 +176,125 @@ def config() -> None:
     console.print(f"  Web Enabled: {settings.tools.web_enabled}")
     console.print(f"  Shell Enabled: {settings.tools.shell_enabled}")
     console.print(f"  File Enabled: {settings.tools.file_enabled}")
+
+
+async def _chat_once(message: str, session_id: str, provider_name: str) -> None:
+    """
+    單次對話模式
+
+    Args:
+        message: 用戶訊息
+        session_id: 會話 ID
+        provider_name: Provider 名稱
+    """
+    console.print(f"[bold green]MartletMolt v{__version__}[/bold green]")
+    console.print(f"[dim]Provider: {provider_name}[/dim]")
+    console.print()
+
+    try:
+        # 建立 Provider 和 Agent
+        provider = get_provider(provider_name)
+        session = session_manager.get_or_create(session_id)
+        agent = Agent(provider=provider, session=session)
+
+        # 添加系統提示（如果是新會話）
+        if len(session.messages) == 0 and settings.agent.system_prompt:
+            agent.add_system_prompt(settings.agent.system_prompt)
+
+        # 顯示用戶訊息
+        console.print(Panel(message, title="[bold blue]You[/bold blue]", border_style="blue"))
+
+        # 發送請求並顯示回應
+        with console.status("[bold green]Thinking...[/bold green]"):
+            response = await agent.chat(message)
+
+        # 顯示 AI 回應
+        console.print()
+        console.print(Panel(Markdown(response), title="[bold green]Assistant[/bold green]", border_style="green"))
+
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        console.print("[dim]Please check your configuration in shared/config/settings.yaml[/dim]")
+    except Exception:
+        console.print("[red]An error occurred during chat.[/red]")
+
+        from loguru import logger
+
+        logger.exception("Chat error")
+
+
+async def _chat_interactive(session_id: str, provider_name: str) -> None:
+    """
+    互動對話模式
+
+    Args:
+        session_id: 會話 ID
+        provider_name: Provider 名稱
+    """
+    console.print(f"[bold green]MartletMolt v{__version__}[/bold green]")
+    console.print(f"[dim]Session: {session_id}[/dim]")
+    console.print(f"[dim]Provider: {provider_name}[/dim]")
+    console.print()
+    console.print("[dim]Commands: 'exit' to quit, 'clear' to clear session, 'new' for new session[/dim]")
+    console.print()
+
+    try:
+        # 建立 Provider 和 Agent
+        provider = get_provider(provider_name)
+        session = session_manager.get_or_create(session_id)
+        agent = Agent(provider=provider, session=session)
+
+        # 添加系統提示（如果是新會話）
+        if len(session.messages) == 0 and settings.agent.system_prompt:
+            agent.add_system_prompt(settings.agent.system_prompt)
+
+        while True:
+            try:
+                # 讀取用戶輸入
+                user_input = console.input("[bold blue]You:[bold blue] ").strip()
+
+                if not user_input:
+                    continue
+
+                # 處理命令
+                if user_input.lower() == "exit":
+                    console.print("[dim]Goodbye![/dim]")
+                    break
+                elif user_input.lower() == "clear":
+                    agent.reset()
+                    console.print("[dim]Session cleared.[/dim]")
+                    continue
+                elif user_input.lower() == "new":
+                    session_id = f"session_{__import__('uuid').uuid4().hex[:8]}"
+                    session = session_manager.create(session_id)
+                    agent = Agent(provider=provider, session=session)
+                    if settings.agent.system_prompt:
+                        agent.add_system_prompt(settings.agent.system_prompt)
+                    console.print(f"[dim]New session created: {session_id}[/dim]")
+                    continue
+
+                # 發送請求並顯示回應
+                with console.status("[bold green]Thinking...[/bold green]"):
+                    response = await agent.chat(user_input)
+
+                # 顯示 AI 回應
+                console.print()
+                console.print(Panel(Markdown(response), title="[bold green]Assistant[/bold green]", border_style="green"))
+                console.print()
+
+            except KeyboardInterrupt:
+                console.print("\n[dim]Goodbye![/dim]")
+                break
+
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        console.print("[dim]Please check your configuration in shared/config/settings.yaml[/dim]")
+    except Exception:
+        console.print("[red]An error occurred during chat.[/red]")
+
+        from loguru import logger
+
+        logger.exception("Chat error")
 
 
 def main() -> None:

@@ -49,7 +49,7 @@ class Agent:
         self.session.add_message("user", user_input)
 
         # 準備訊息
-        messages = self.session.get_messages_for_API()
+        messages = self.session.get_messages_for_api()
 
         # 調用 Provider
         response = await self.provider.chat(messages)
@@ -79,7 +79,7 @@ class Agent:
         self.session.add_message("user", user_input)
 
         # 準備訊息
-        messages = self.session.get_messages_for_API()
+        messages = self.session.get_messages_for_api()
 
         # 調用 Provider (串流)
         full_response = ""
