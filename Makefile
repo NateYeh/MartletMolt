@@ -1,4 +1,4 @@
-.PHONY: install format lint clean yaml-check yaml-fix dev dev-backend dev-frontend docs check-all
+.PHONY: install format lint clean yaml-check yaml-fix dev dev-backend dev-frontend docs check-all sync sync-a-to-b sync-b-to-a
 
 # 安裝依賴
 install:
@@ -75,3 +75,41 @@ dev-frontend:
 	@echo "Frontend: http://0.0.0.0:8002"
 	@echo "Ensure Backend API is running at http://0.0.0.0:8001"
 	cd frontend/web-lite && python main.py
+
+# ─────────────────────────────────────────────────────────
+# System A/B 同步命令
+# ─────────────────────────────────────────────────────────
+
+# 要同步的模組
+SYNC_MODULES = channels tools providers core
+
+# 同步 system_a → system_b
+sync-a-to-b:
+	@echo "🔄 同步 system_a → system_b..."
+	@for module in $(SYNC_MODULES); do \
+		echo "  📁 $$module"; \
+		rsync -av --delete system_a/martlet_molt/$$module/ system_b/martlet_molt/$$module/; \
+	done
+	@echo "✅ 同步完成！system_a → system_b"
+
+# 同步 system_b → system_a
+sync-b-to-a:
+	@echo "🔄 同步 system_b → system_a..."
+	@for module in $(SYNC_MODULES); do \
+		echo "  📁 $$module"; \
+		rsync -av --delete system_b/martlet_molt/$$module/ system_a/martlet_molt/$$module/; \
+	done
+	@echo "✅ 同步完成！system_b → system_a"
+
+# 顯示同步說明
+sync:
+	@echo "📦 System A/B 同步工具"
+	@echo ""
+	@echo "使用方式："
+	@echo "  make sync-a-to-b    # system_a → system_b"
+	@echo "  make sync-b-to-a    # system_b → system_a"
+	@echo ""
+	@echo "同步的模組："
+	@for module in $(SYNC_MODULES); do echo "  - $$module"; done
+	@echo ""
+	@echo "⚠️  注意：--delete 參數會刪除目標端多餘的檔案"
