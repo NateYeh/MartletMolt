@@ -2,12 +2,14 @@
 AI Agent 核心
 """
 
+import asyncio
 import json
 from collections.abc import AsyncIterator
 
 from loguru import logger
 
 from martlet_molt.core.session import Session, session_manager
+from martlet_molt.core.stream_buffer import StreamBuffer
 from martlet_molt.providers.base import BaseProvider, ToolDefinition
 from martlet_molt.tools.base import ToolRegistry
 
@@ -215,7 +217,7 @@ class Agent:
 
         # 調用 Provider (串流)
         full_response = ""
-        async for chunk in self.provider.stream(messages):
+        async for chunk in self.provider.stream(messages):  # type: ignore[misc]
             full_response += chunk
             yield chunk
 
@@ -224,6 +226,68 @@ class Agent:
 
         # 儲存會話
         session_manager.save(self.session)
+
+    async def stream_to_buffer(
+        self,
+        user_input: str,
+        buffer: StreamBuffer,
+    ) -> str:
+        """
+        串流到緩衝區（後台任務使用）
+
+        Args:
+            user_input: 用戶輸入
+            buffer: 串流緩衝區
+
+        Returns:
+            完整回應內容
+        """
+        if not self.provider:
+            raise ValueError("No provider set")
+
+        # 註冊 Tools
+        self._register_tools_to_provider()
+
+        # 添加用戶訊息
+        self.session.add_message("user", user_input)
+
+        # 準備訊息
+        messages = self.session.get_messages_for_api()
+
+        # 標記緩衝區開始
+        buffer.start()
+
+        full_response = ""
+        try:
+            # 調用 Provider (串流)
+            async for chunk in self.provider.stream(messages):  # type: ignore[misc]
+                full_response += chunk
+
+                # 推入緩衝區
+                await buffer.put(chunk)
+
+            # 標記完成
+            buffer.complete()
+
+            # 添加助手訊息
+            self.session.add_message("assistant", full_response)
+
+            # 儲存會話
+            session_manager.save(self.session)
+
+            logger.info(f"Stream completed: session={self.session.id}, response_len={len(full_response)}")
+
+            return full_response
+
+        except asyncio.CancelledError:
+            logger.warning(f"Stream cancelled: session={self.session.id}")
+            buffer.cancel()
+            raise
+
+        except Exception as e:
+            logger.exception(f"Stream failed: {e}")
+            buffer.fail(str(e))
+            raise
 
     async def run_tools(self, tool_calls: list[dict]) -> list[dict]:
         """

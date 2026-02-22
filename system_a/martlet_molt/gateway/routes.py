@@ -2,13 +2,17 @@
 REST API 路由（純 API，不提供前端頁面）
 """
 
+import asyncio
+
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
+from loguru import logger
 from pydantic import BaseModel
 
 from martlet_molt.core.agent import Agent
 from martlet_molt.core.config import settings
 from martlet_molt.core.session import session_manager
+from martlet_molt.core.stream_buffer import stream_buffer_manager
 from martlet_molt.providers.base import BaseProvider
 from martlet_molt.providers.ollama import OllamaProvider
 from martlet_molt.providers.openai import OpenAIProvider
@@ -134,24 +138,58 @@ async def chat(request: ChatRequest):
 
 @router.post("/chat/stream")
 async def chat_stream(request: ChatRequest):
-    """聊天端點（串流）"""
+    """
+    聊天端點（串流 + 緩衝）
+
+    改進版：
+    - 後端獨立完成 OpenAI 串流
+    - 前端斷線不影響後台處理
+    - 完整回應必定保存
+    """
     # 取得或建立會話
     session = session_manager.get_or_create(request.session_id)
 
-    # 建立 Agent
+    # 建立 Provider 和 Agent
     provider = get_provider()
     agent = Agent(provider=provider, session=session)
 
-    async def generate():
+    # 創建串流緩衝區
+    buffer = stream_buffer_manager.create(request.session_id)
+
+    # 啟動後台任務（獨立運行）
+    async def background_stream():
+        """後台串流任務"""
         try:
-            async for chunk in agent.stream(request.message):
+            await agent.stream_to_buffer(request.message, buffer)
+        except Exception as e:
+            logger.exception(f"Background stream failed: {e}")
+
+    # 使用 asyncio 創建後台任務（不等待完成，讓它獨立運行）
+    _ = asyncio.create_task(background_stream())
+
+    # 前端消費緩衝區
+    async def stream_to_frontend():
+        """從緩衝區串流到前端"""
+        try:
+            async for chunk in buffer.stream():
                 yield f"data: {chunk}\n\n"
             yield "data: [DONE]\n\n"
+
+        except asyncio.CancelledError:
+            logger.warning(f"Frontend disconnected: session={request.session_id}")
+            # 注意：這裡不取消後台任務，讓它繼續完成
+
         except Exception as e:
+            logger.exception(f"Stream to frontend failed: {e}")
             yield f"data: [ERROR] {str(e)}\n\n"
 
+        finally:
+            # 等待後台任務完成（可選）
+            # 這裡不等待，讓後台任務自行完成
+            pass
+
     return StreamingResponse(
-        generate(),
+        stream_to_frontend(),
         media_type="text/event-stream",
     )
 
