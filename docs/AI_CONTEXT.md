@@ -85,8 +85,12 @@ system_a/martlet_molt/
 │   ├── server.py          # FastAPI 主程式
 │   ├── routes.py          # REST API
 │   └── websocket.py       # WebSocket
-├── channels/               # 通訊通道
+├── channels/               # 通訊通道（統一介面）
+│   ├── base.py            # 抽象基類
+│   ├── cli/               # CLI Channel
+│   │   └── channel.py     # 命令行互動
 │   └── web/               # Web Channel
+│       └── channel.py     # WebSocket 通訊
 ├── cli.py                 # CLI 入口
 └── main.py                # 服務入口
 
@@ -177,7 +181,30 @@ class BaseProvider(ABC):
 
 ```python
 from abc import ABC, abstractmethod
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
+from enum import StrEnum
+from pydantic import BaseModel
+
+class ChannelStatus(StrEnum):
+    """Channel 狀態"""
+    IDLE = "idle"
+    RUNNING = "running"
+    ERROR = "error"
+    STOPPED = "stopped"
+
+class ChannelMessage(BaseModel):
+    """統一的訊息格式"""
+    content: str
+    user_id: str = ""
+    session_id: str = ""
+    metadata: dict = {}
+
+class ChannelResponse(BaseModel):
+    """統一的回應格式"""
+    content: str
+    success: bool = True
+    error: str = ""
+    metadata: dict = {}
 
 class BaseChannel(ABC):
     """通訊通道抽象基類"""
@@ -185,15 +212,26 @@ class BaseChannel(ABC):
     name: str
     
     @abstractmethod
-    async def receive(self) -> AsyncIterator[Message]:
+    async def receive(self) -> AsyncIterator[ChannelMessage]:
         """接收訊息"""
         pass
     
     @abstractmethod
-    async def send(self, message: Message) -> bool:
-        """發送訊息"""
+    async def send(self, response: ChannelResponse) -> bool:
+        """發送回應"""
         pass
+    
+    async def start(self) -> bool: ...
+    async def stop(self) -> bool: ...
+    async def health_check(self) -> bool: ...
 ```
+
+### 已實現的 Channel
+
+| Channel | 用途 | 檔案位置 |
+|---------|------|----------|
+| `CLIChannel` | 命令行互動 | `channels/cli/channel.py` |
+| `WebChannel` | WebSocket 通訊 | `channels/web/channel.py` |
 
 ---
 
