@@ -54,8 +54,9 @@ def test_chat_endpoint(mock_agent_class, mock_get_provider, client):
 
 def test_sessions_list(client):
     """測試會話列表"""
-    # 確保至少有一個會話
-    client.post("/chat", json={"message": "ping", "session_id": "s1"})
+    # 直接使用 session_manager 建立會話，避免呼叫真實 LLM
+    from martlet_molt.core.session import session_manager
+    session_manager.create("s1_test")
     
     response = client.get("/sessions")
     assert response.status_code == 200
@@ -66,8 +67,9 @@ def test_sessions_list(client):
 
 def test_session_detail_and_delete(client):
     """測試會話詳情與刪除"""
+    from martlet_molt.core.session import session_manager
     sid = "test_to_del"
-    client.post("/chat", json={"message": "init", "session_id": sid})
+    session_manager.create(sid)
     
     # 詳情
     resp = client.get(f"/sessions/{sid}")

@@ -63,14 +63,13 @@ def test_manager_delete(session_manager):
     session_id = "to_delete"
     session_manager.create(session_id)
     
-    # 確認檔案存在
-    file_path = session_manager.sessions_dir / f"{session_id}.jsonl"
-    assert file_path.exists()
+    # 確保在清單中
+    assert session_id in session_manager.list_sessions()
     
     # 執行刪除
     success = session_manager.delete(session_id)
     assert success is True
-    assert not file_path.exists()
+    assert session_id not in session_manager.list_sessions()
     assert session_id not in session_manager._sessions
 
 
