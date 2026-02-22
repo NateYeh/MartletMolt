@@ -81,17 +81,16 @@ class ApiDocGenerator:
         sdk_file = self.sdk_dir / 'typescript.yaml'
         return self.load_yaml(sdk_file) if sdk_file.exists() else {}
 
-    def generate_api_endpoints_table(self, endpoints: list[dict[str, Any]]) -> str:
+    def _classify_endpoints(self, endpoints: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
         """
-        生成 API 端點總覽表格
+        分類端點。
 
         Args:
-            endpoints: 端點列表
+            endpoints: 端點列表。
 
         Returns:
-            Markdown 表格
+            分類後的端點字典，key 為類型名稱。
         """
-        # 分類端點
         system_endpoints = []
         chat_endpoints = []
         session_endpoints = []
@@ -106,42 +105,92 @@ class ApiDocGenerator:
             else:
                 system_endpoints.append(endpoint)
 
-        # 生成表格
+        return {
+            'system': system_endpoints,
+            'chat': chat_endpoints,
+            'session': session_endpoints,
+        }
+
+    def _generate_endpoint_table_section(
+        self,
+        endpoints: list[dict[str, Any]],
+        title: str,
+        headers: list[str],
+        include_stream: bool = False,
+    ) -> list[str]:
+        """
+        生成單一類型的端點表格區塊。
+
+        Args:
+            endpoints: 端點列表。
+            title: 區塊標題。
+            headers: 表格標題列。
+            include_stream: 是否包含串流欄位。
+
+        Returns:
+            Markdown 行列表。
+        """
+        if not endpoints:
+            return []
+
+        lines = [f'### {title}\n']
+        lines.append('| ' + ' | '.join(headers) + ' |')
+        lines.append('| ' + ' | '.join(['------'] * len(headers)) + ' |')
+
+        for ep in endpoints:
+            method = ep['endpoint']['method']
+            path = ep['endpoint']['path']
+            desc = ep['title']
+
+            if include_stream:
+                is_stream = '✅' if 'stream' in path else '❌'
+                lines.append(f"| `{method}` | `{path}` | {desc} | {is_stream} |")
+            else:
+                lines.append(f"| `{method}` | `{path}` | {desc} |")
+
+        lines.append('')
+        return lines
+
+    def generate_api_endpoints_table(self, endpoints: list[dict[str, Any]]) -> str:
+        """
+        生成 API 端點總覽表格。
+
+        Args:
+            endpoints: 端點列表。
+
+        Returns:
+            Markdown 表格。
+        """
+        classified = self._classify_endpoints(endpoints)
         lines = []
 
         # 系統端點
-        if system_endpoints:
-            lines.append('### 系統端點\n')
-            lines.append('| 方法 | 路徑 | 描述 |')
-            lines.append('|------|------|------|')
-            for ep in system_endpoints:
-                lines.append(
-                    f"| `{ep['endpoint']['method']}` | `{ep['endpoint']['path']}` | {ep['title']} |"
-                )
-            lines.append('')
+        lines.extend(
+            self._generate_endpoint_table_section(
+                classified['system'],
+                '系統端點',
+                ['方法', '路徑', '描述'],
+            )
+        )
 
         # 對話端點
-        if chat_endpoints:
-            lines.append('### 對話端點\n')
-            lines.append('| 方法 | 路徑 | 描述 | 是否串流 |')
-            lines.append('|------|------|------|----------|')
-            for ep in chat_endpoints:
-                is_stream = '✅' if 'stream' in ep['endpoint']['path'] else '❌'
-                lines.append(
-                    f"| `{ep['endpoint']['method']}` | `{ep['endpoint']['path']}` | {ep['title']} | {is_stream} |"
-                )
-            lines.append('')
+        lines.extend(
+            self._generate_endpoint_table_section(
+                classified['chat'],
+                '對話端點',
+                ['方法', '路徑', '描述', '是否串流'],
+                include_stream=True,
+            )
+        )
 
         # 會話管理端點
-        if session_endpoints:
-            lines.append('### 會話管理端點\n')
-            lines.append('| 方法 | 路徑 | 描述 |')
-            lines.append('|------|------|------|')
-            for ep in session_endpoints:
-                lines.append(
-                    f"| `{ep['endpoint']['method']}` | `{ep['endpoint']['path']}` | {ep['title']} |"
-                )
-            lines.append('')
+        lines.extend(
+            self._generate_endpoint_table_section(
+                classified['session'],
+                '會話管理端點',
+                ['方法', '路徑', '描述'],
+            )
+        )
 
         return '\n'.join(lines)
 
