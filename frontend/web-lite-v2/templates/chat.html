@@ -227,33 +227,65 @@ function chatApp() {
             const textarea = document.querySelector('textarea');
             if (textarea) textarea.style.height = 'auto';
             
+            // 先添加一個空的助理消息，用於串流顯示
+            const assistantMessageIndex = this.messages.push({ role: 'assistant', content: '' }) - 1;
+            this.scrollToBottom();
+            
             try {
-                const response = await fetch('{{ backend_url }}/chat', {
+                const response = await fetch('{{ backend_url }}/chat/stream', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         message: message, 
-                        session_id: this.sessionId 
+                        session_id: this.sessionId,
+                        stream: true
                     })
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
                 }
                 
-                const data = await response.json();
+                // 處理串流內容
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullContent = '';
                 
-                if (data.message) {
-                    this.messages.push({ role: 'assistant', content: data.message });
-                } else if (data.detail) {
-                    this.messages.push({ role: 'assistant', content: `錯誤: ${data.detail}` });
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+                        
+                        const data = trimmedLine.slice(6);
+                        
+                        if (data === '[DONE]') {
+                            console.log('[ChatApp] 串流結束');
+                            break;
+                        }
+                        
+                        if (data.startsWith('[ERROR]')) {
+                            const errorMsg = data.slice(7);
+                            throw new Error(errorMsg);
+                        }
+                        
+                        // 附加內容到助理消息
+                        fullContent += data;
+                        this.messages[assistantMessageIndex].content = fullContent;
+                        
+                        // 定期滾動到底部
+                        this.scrollToBottom();
+                    }
                 }
             } catch (error) {
-                console.error('[ChatApp] Error:', error);
-                this.messages.push({ 
-                    role: 'assistant', 
-                    content: `抱歉，發生錯誤：${error.message}\n\n請檢查後端服務是否正常運行。` 
-                });
+                console.error('[ChatApp] 串流錯誤:', error);
+                this.messages[assistantMessageIndex].content = `抱歉，發生錯誤：${error.message}\n\n請檢查後端服務是否正常運行。`;
             } finally {
                 this.isLoading = false;
                 this.scrollToBottom();
