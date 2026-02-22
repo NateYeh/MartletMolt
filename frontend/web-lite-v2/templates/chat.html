@@ -195,6 +195,7 @@ function chatApp() {
         inputMessage: '',
         isLoading: false,
         sessionId: 'default',
+        backendUrl: '{{ backend_url }}',
         
         suggestions: [
             { icon: '🤖', text: '什麼是自我進化 AI？' },
@@ -206,6 +207,19 @@ function chatApp() {
         init() {
             console.log('[ChatApp] 初始化完成');
             this.loadSessionId();
+            this.adjustBackendUrl();
+        },
+
+        adjustBackendUrl() {
+            // 如果當前頁面的 host 不是 localhost，但後端網址是 localhost
+            // 則自動將後端網址修正為當前頁面的 host，確保遠端存取正常
+            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                if (this.backendUrl.includes('127.0.0.1') || this.backendUrl.includes('0.0.0.0')) {
+                    const originalUrl = new URL(this.backendUrl);
+                    this.backendUrl = `${window.location.protocol}//${window.location.hostname}:${originalUrl.port}`;
+                    console.log('[ChatApp] 自動修正後端 URL 為:', this.backendUrl);
+                }
+            }
         },
         
         loadSessionId() {
@@ -232,7 +246,7 @@ function chatApp() {
             this.scrollToBottom();
             
             try {
-                const response = await fetch('{{ backend_url }}/chat/stream', {
+                const response = await fetch(`${this.backendUrl}/chat/stream`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
