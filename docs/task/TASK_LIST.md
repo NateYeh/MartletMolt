@@ -19,9 +19,10 @@
 ## 🔥 當前衝刺 (Active Sprints)
 *優先處理影響系統可用性的核心升級。*
 
-### TASK-007: 穩定性建設 (Unit Tests) ⏳
-- **說明**: 補全系統核心模組的單元測試。
-- **當前進度**: 20%。
+### TASK-CORE-007: 穩定性建設 (Unit Tests) ⏳
+- **說明**: 補全系統核心模組的單元測試，建立進化安全網。
+- **文件**: [`TASK-CORE-007_Stability_Construction.md`](./TASK-CORE-007_Stability_Construction.md)
+- **當前進度**: 25%。 (已建立任務規格書)
 
 ---
 
