@@ -45,19 +45,19 @@
 
 ---
 
-## ✅ 榮譽存檔 (Archive / Completed)
-*這些任務已順利完成，作為系統進化的基石保留。*
+## 📁 已完成任務 (Completed)
+*查看 `docs/task/Completed/` 目錄。*
 
-| ID | 任務名稱 | 完成日期 | 相關文檔 |
-| :--- | :--- | :--- | :--- |
-| TASK-011 | **WebSocket 協議遷移** | 2025-02-22 | [`TASK_web_connectivity_and_channel_sync.md`](./TASK_web_connectivity_and_channel_sync.md) |
-| TASK-010 | **Web UI 連通性修復** | 2025-02-22 | [`TASK_web_connectivity_and_channel_sync.md`](./TASK_web_connectivity_and_channel_sync.md) |
-| TASK-000 | **串流緩衝架構 (方案2)** | 2025-02-22 | [`Completed/TASK_streaming_buffer.md`](./Completed/TASK_streaming_buffer.md) |
-| CH-001 | **BaseChannel 抽象架構** | 2025-02-22 | - |
-| CH-002 | **WebSocket 通道 (WebChannel)** | 2025-02-22 | - |
-| CH-003 | **CLI 交互通道** | 2025-02-22 | - |
-| UI-001 | **Web Lite V2 核心 UI** | 2025-02-22 | - |
-| SYS-001 | **系統 A/B 同步工具** | 2025-02-22 | - |
+| ID | 任務名稱 | 完成日期 |
+| :--- | :--- | :--- |
+| TASK-011 | WebSocket 協議遷移 | 2025-02-22 |
+| TASK-010 | Web UI 連通性修復 | 2025-02-22 |
+| TASK-000 | 串流緩衝架構 | 2025-02-22 |
+| CH-001 | BaseChannel 抽象架構 | 2025-02-22 |
+| CH-002 | WebSocket 通道 (WebChannel) | 2025-02-22 |
+| CH-003 | CLI 交互通道 | 2025-02-22 |
+| UI-001 | Web Lite V2 核心 UI | 2025-02-22 |
+| SYS-001 | 系統 A/B 同步工具 | 2025-02-22 |
 
 ---
 
