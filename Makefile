@@ -80,26 +80,13 @@ dev-frontend:
 # System A/B 同步命令
 # ─────────────────────────────────────────────────────────
 
-# 要同步的模組
-SYNC_MODULES = channels tools providers core
-
 # 同步 system_a → system_b
 sync-a-to-b:
-	@echo "🔄 同步 system_a → system_b..."
-	@for module in $(SYNC_MODULES); do \
-		echo "  📁 $$module"; \
-		rsync -av --delete system_a/martlet_molt/$$module/ system_b/martlet_molt/$$module/; \
-	done
-	@echo "✅ 同步完成！system_a → system_b"
+	python scripts/sync_systems.py a-to-b
 
 # 同步 system_b → system_a
 sync-b-to-a:
-	@echo "🔄 同步 system_b → system_a..."
-	@for module in $(SYNC_MODULES); do \
-		echo "  📁 $$module"; \
-		rsync -av --delete system_b/martlet_molt/$$module/ system_a/martlet_molt/$$module/; \
-	done
-	@echo "✅ 同步完成！system_b → system_a"
+	python scripts/sync_systems.py b-to-a
 
 # 顯示同步說明
 sync:
@@ -109,7 +96,7 @@ sync:
 	@echo "  make sync-a-to-b    # system_a → system_b"
 	@echo "  make sync-b-to-a    # system_b → system_a"
 	@echo ""
-	@echo "同步的模組："
-	@for module in $(SYNC_MODULES); do echo "  - $$module"; done
+	@echo "同步的模組：channels, tools, providers, core"
 	@echo ""
-	@echo "⚠️  注意：--delete 參數會刪除目標端多餘的檔案"
+	@echo "指定模組："
+	@echo "  python scripts/sync_systems.py b-to-a --modules channels tools"
