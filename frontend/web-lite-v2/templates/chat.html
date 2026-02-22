@@ -11,6 +11,19 @@
             <span class="px-3 py-1 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full">
                 Session: default
             </span>
+            <!-- WebSocket 連線狀態指示器 -->
+            <span x-data
+                  :class="$store.ws?.connected ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'"
+                  class="px-2 py-1 text-xs font-medium rounded-full transition-colors">
+                <span x-show="$store.ws?.connected" class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                    已連線
+                </span>
+                <span x-show="!$store.ws?.connected" class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                    未連線
+                </span>
+            </span>
         </div>
         
         <div class="flex items-center space-x-2">
@@ -188,6 +201,18 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Alpine.js WebSocket 狀態 Store -->
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('ws', {
+        connected: false,
+        setConnected(value) {
+            this.connected = value;
+        }
+    });
+});
+</script>
+
 <script>
 function chatApp() {
     return {
@@ -196,6 +221,7 @@ function chatApp() {
         isLoading: false,
         sessionId: 'default',
         backendUrl: '{{ backend_url }}',
+        websocket: null,
         
         suggestions: [
             { icon: '🤖', text: '什麼是自我進化 AI？' },
@@ -208,6 +234,7 @@ function chatApp() {
             console.log('[ChatApp] 初始化完成');
             this.loadSessionId();
             this.adjustBackendUrl();
+            this.connectWebSocket();
         },
 
         adjustBackendUrl() {
@@ -227,10 +254,109 @@ function chatApp() {
             const urlParams = new URLSearchParams(window.location.search);
             this.sessionId = urlParams.get('session') || localStorage.getItem('sessionId') || 'default';
         },
+
+        getWebSocketUrl() {
+            // 將 HTTP URL 轉換為 WebSocket URL
+            const url = new URL(this.backendUrl);
+            const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${protocol}//${url.host}/ws/${this.sessionId}`;
+        },
+
+        connectWebSocket() {
+            const wsUrl = this.getWebSocketUrl();
+            console.log('[ChatApp] 連線至 WebSocket:', wsUrl);
+
+            try {
+                this.websocket = new WebSocket(wsUrl);
+
+                this.websocket.onopen = () => {
+                    console.log('[ChatApp] WebSocket 已連線');
+                    Alpine.store('ws').setConnected(true);
+                };
+
+                this.websocket.onclose = (event) => {
+                    console.log('[ChatApp] WebSocket 已斷開:', event.code, event.reason);
+                    Alpine.store('ws').setConnected(false);
+                    
+                    // 嘗試重連（延遲 3 秒）
+                    setTimeout(() => {
+                        if (!Alpine.store('ws').connected) {
+                            console.log('[ChatApp] 嘗試重新連線...');
+                            this.connectWebSocket();
+                        }
+                    }, 3000);
+                };
+
+                this.websocket.onerror = (error) => {
+                    console.error('[ChatApp] WebSocket 錯誤:', error);
+                    Alpine.store('ws').setConnected(false);
+                };
+
+                this.websocket.onmessage = (event) => {
+                    this.handleWebSocketMessage(event.data);
+                };
+
+            } catch (error) {
+                console.error('[ChatApp] 建立 WebSocket 失敗:', error);
+                Alpine.store('ws').setConnected(false);
+            }
+        },
+
+        handleWebSocketMessage(data) {
+            try {
+                const response = JSON.parse(data);
+                const { content, success, error, metadata } = response;
+                const type = metadata?.type || 'stream';
+
+                if (type === 'stream' && content) {
+                    // 串流片段：附加到最後一條 assistant 訊息
+                    const lastMessage = this.messages[this.messages.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                        lastMessage.content += content;
+                    }
+                    this.scrollToBottom();
+                } 
+                else if (type === 'done') {
+                    // 串流完成
+                    console.log('[ChatApp] 串流完成');
+                    this.isLoading = false;
+                    this.scrollToBottom();
+                } 
+                else if (type === 'error') {
+                    // 錯誤
+                    console.error('[ChatApp] 伺服器錯誤:', error);
+                    const lastMessage = this.messages[this.messages.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                        lastMessage.content = `抱歉，發生錯誤：${error}`;
+                    }
+                    this.isLoading = false;
+                }
+
+            } catch (e) {
+                console.error('[ChatApp] 解析訊息失敗:', e);
+            }
+        },
         
         async sendMessage() {
             const message = this.inputMessage.trim();
             if (!message || this.isLoading) return;
+
+            // 檢查 WebSocket 連線狀態
+            if (!Alpine.store('ws').connected || this.websocket?.readyState !== WebSocket.OPEN) {
+                console.warn('[ChatApp] WebSocket 未連線，嘗試重連...');
+                this.connectWebSocket();
+                
+                // 等待連線
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (!Alpine.store('ws').connected) {
+                    this.messages.push({ 
+                        role: 'assistant', 
+                        content: '抱歉，無法連線至伺服器，請稍後再試。' 
+                    });
+                    return;
+                }
+            }
             
             // 添加用戶消息
             this.messages.push({ role: 'user', content: message });
@@ -242,67 +368,26 @@ function chatApp() {
             if (textarea) textarea.style.height = 'auto';
             
             // 先添加一個空的助理消息，用於串流顯示
-            const assistantMessageIndex = this.messages.push({ role: 'assistant', content: '' }) - 1;
+            this.messages.push({ role: 'assistant', content: '' });
             this.scrollToBottom();
             
             try {
-                const response = await fetch(`${this.backendUrl}/chat/stream`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        message: message, 
-                        session_id: this.sessionId,
-                        stream: true
-                    })
-                });
+                // 透過 WebSocket 發送訊息
+                const payload = {
+                    content: message,
+                    user_id: 'web_user'
+                };
                 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
-                }
+                this.websocket.send(JSON.stringify(payload));
+                console.log('[ChatApp] 已發送訊息');
                 
-                // 處理串流內容
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let fullContent = '';
-                
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        const trimmedLine = line.trim();
-                        if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
-                        
-                        const data = trimmedLine.slice(6);
-                        
-                        if (data === '[DONE]') {
-                            console.log('[ChatApp] 串流結束');
-                            break;
-                        }
-                        
-                        if (data.startsWith('[ERROR]')) {
-                            const errorMsg = data.slice(7);
-                            throw new Error(errorMsg);
-                        }
-                        
-                        // 附加內容到助理消息
-                        fullContent += data;
-                        this.messages[assistantMessageIndex].content = fullContent;
-                        
-                        // 定期滾動到底部
-                        this.scrollToBottom();
-                    }
-                }
             } catch (error) {
-                console.error('[ChatApp] 串流錯誤:', error);
-                this.messages[assistantMessageIndex].content = `抱歉，發生錯誤：${error.message}\n\n請檢查後端服務是否正常運行。`;
-            } finally {
+                console.error('[ChatApp] 發送訊息失敗:', error);
+                const lastMessage = this.messages[this.messages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                    lastMessage.content = `抱歉，發送訊息時發生錯誤：${error.message}`;
+                }
                 this.isLoading = false;
-                this.scrollToBottom();
             }
         },
         

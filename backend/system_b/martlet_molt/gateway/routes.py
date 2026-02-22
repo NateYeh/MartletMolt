@@ -2,10 +2,13 @@
 REST API 路由（純 API，不提供前端頁面）
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
+from loguru import logger
 from pydantic import BaseModel
 
+from martlet_molt.channels.base import ChannelResponse
+from martlet_molt.channels.web import WebChannel
 from martlet_molt.core.agent import Agent
 from martlet_molt.core.config import settings
 from martlet_molt.core.session import session_manager
@@ -273,3 +276,86 @@ async def delete_session(session_id: str):
         success=success,
         message=f"Session '{session_id}' deleted successfully" if success else "Failed to delete session",
     )
+
+
+# ============================================
+# WebSocket 端點
+# ============================================
+
+
+@router.websocket("/ws/{session_id}")
+async def websocket_chat(websocket: WebSocket, session_id: str):
+    """
+    WebSocket 聊天端點
+
+    Args:
+        websocket: WebSocket 連線
+        session_id: 會話 ID
+    """
+    # 建立 WebChannel
+    channel = WebChannel(websocket, session_id)
+
+    # 啟動 Channel
+    if not await channel.start():
+        logger.error(f"[WebSocket] 啟動失敗，session_id: {session_id}")
+        return
+
+    logger.info(f"[WebSocket] 連線已建立，session_id: {session_id}")
+
+    try:
+        # 取得或建立會話
+        session = session_manager.get_or_create(session_id)
+
+        # 建立 Agent
+        provider = get_provider()
+        agent = Agent(provider=provider, session=session)
+
+        # 訊息循環
+        async for message in channel.receive():
+            logger.info(f"[WebSocket] 收到訊息: {message.content[:50]}...")
+
+            try:
+                # 串流處理
+                full_response = ""
+                async for chunk in agent.stream(message.content):
+                    full_response += chunk
+
+                    # 透過 WebSocket 發送串流片段
+                    await channel.send(
+                        ChannelResponse(
+                            content=chunk,
+                            success=True,
+                            metadata={"type": "stream", "session_id": session_id},
+                        )
+                    )
+
+                # 發送完成訊號
+                await channel.send(
+                    ChannelResponse(
+                        content="",
+                        success=True,
+                        metadata={"type": "done", "session_id": session_id},
+                    )
+                )
+                logger.info(f"[WebSocket] 回應完成，長度: {len(full_response)}")
+
+            except Exception as e:
+                logger.exception(f"[WebSocket] 處理訊息時發生錯誤: {e}")
+                await channel.send(
+                    ChannelResponse(
+                        content="",
+                        success=False,
+                        error=str(e),
+                        metadata={"type": "error", "session_id": session_id},
+                    )
+                )
+
+    except WebSocketDisconnect:
+        logger.info(f"[WebSocket] 客戶端斷開連線，session_id: {session_id}")
+
+    except Exception as e:
+        logger.exception(f"[WebSocket] 連線異常: {e}")
+
+    finally:
+        await channel.stop()
+        logger.info(f"[WebSocket] Channel 已關閉，session_id: {session_id}")
