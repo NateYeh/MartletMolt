@@ -1,37 +1,34 @@
 # Web Lite V2
 
-MartletMolt 的輕量化版 LobeHub UI。
+MartletMolt 的輕量化版 LobeHub UI。這是一個**輕量化、現代化、AI 友善**的前端實作，旨在保持 LobeHub 的設計美感，同時將複雜度降至最低。
 
 ## 🎨 設計理念
 
 **輕量化 + 現代化 UI**
 
-- 保留 LobeHub 的現代化介面設計
-- 採用服務端渲染（SSR），降低複雜度
-- 零 JavaScript 打包工具，全部使用 CDN
-- AI 可輕鬆修改 HTML 模板
+- **視覺一致性**: 保留 LobeHub 的現代化介面與色彩系統。
+- **卓越性能**: 採用服務端渲染（SSR），大幅縮短首次加載時間。
+- **零構建依賴**: 零 JavaScript 打包工具，全部使用 CDN 載入。
+- **AI 友善性**: 純 HTML/Tailwind 結構，讓 AI Agent 能輕鬆修改與進化介面。
 
 ## 🏗️ 技術架構
 
-```
-Web Lite V2
-├── FastAPI (Python)           # 前端服務框架
-├── Jinja2                     # 服務端模板渲染
-├── Tailwind CSS (CDN)         # 樣式框架
-├── Alpine.js (CDN)            # 輕量響應式框架
-├── Marked.js (CDN)            # Markdown 解析
-└── Highlight.js (CDN)         # 代碼高亮
-```
+### 技術棧
+| 技術 | 角色 | 載入方式 |
+|------|------|----------|
+| **FastAPI** | 後端服務框架 | Python (pip) |
+| **Jinja2** | 服務端模板渲染 | Python (pip) |
+| **Tailwind CSS** | 樣式框架 | CDN |
+| **Alpine.js** | 輕量響應式框架 | CDN |
+| **Marked.js** | Markdown 解析 | CDN |
+| **Highlight.js** | 代碼高亮 | CDN |
 
-### 與 LobeHub 對比
-
+### 產品對比 (vs LobeHub)
 | 功能 | LobeHub | Web Lite V2 | 降低幅度 |
 |------|---------|-------------|----------|
 | **渲染** | React SSR | Jinja2 SSR | 80% ↓ |
 | **狀態管理** | Zustand | Alpine.js | 90% ↓ |
 | **路由** | Next.js | FastAPI | 70% ↓ |
-| **樣式** | Tailwind + Styled | Tailwind (CDN) | 60% ↓ |
-| **Markdown** | 自定義渲染器 | Marked.js | 85% ↓ |
 | **總大小** | ~2MB | ~100KB | **95% ↓** |
 
 ## 📁 目錄結構
@@ -47,14 +44,16 @@ web-lite-v2/
 │       └── sidebar.html      # 側邊欄組件
 ├── static/
 │   ├── css/
+│   │   └── app.css           # 自定義樣式
 │   └── js/
+│       └── app.js            # Alpine.js 應用邏輯
 └── README.md
 ```
 
 ## 🚀 快速啟動
 
-### 方法 1：使用 Makefile
-
+### 方法 1：使用 Makefile (推薦)
+在專案根目錄執行：
 ```bash
 # 同時啟動後端 + 前端
 make dev
@@ -65,168 +64,93 @@ make dev-frontend  # 前端服務 (Port 8002)
 ```
 
 ### 方法 2：手動啟動
-
 ```bash
-# 終端機 1：啟動後端
-python -m martlet_molt.main
-
-# 終端機 2：啟動前端
 cd frontend/web-lite-v2
 python main.py
 ```
 
-### 訪問地址
-
-- **前端 UI**: http://0.0.0.0:8002
-- **後端 API**: http://0.0.0.0:8001
-- **健康檢查**: http://0.0.0.0:8002/health
+- **前端 UI**: [http://localhost:8002](http://localhost:8002)
+- **健康檢查**: `http://localhost:8002/health`
 
 ## 🎯 核心功能
 
-### 已實現
+### ✅ 已實現
+- **LobeHub 風格 UI**: 漸變背景、圓角卡片、柔和陰影。
+- **主題切換**: 完善的暗色/亮色模式支援（LocalStorage 持久化）。
+- **Markdown & 高亮**: 支援完整的 Markdown 語法解析與代碼塊語法高亮。
+- **響應式導航**: 側邊欄縮放與移動端適配。
+- **即時對話**: 非同步 API 調用與動態消息載入動畫。
 
-- ✅ LobeHub 風格的現代化 UI
-- ✅ 暗色/亮色主題切換
-- ✅ 響應式側邊欄導航
-- ✅ Markdown 渲染與代碼高亮
-- ✅ 即時對話功能
-- ✅ 快捷建議按鈕
-- ✅ 載入動畫效果
+### ⏳ 計劃中
+- **SSE 串流響應**: 實現打字機效果。
+- **會話管理**: 多對話歷史記錄儲存與搜索。
+- **Agent 設定**: 可視化調整 Agent 參數。
+- **文件處理**: 支援附件上傳與預覽。
 
-### 計劃中
+## 🎨 技術實現細節
 
-- ⏳ 串流響應（SSE）
-- ⏳ 會話管理
-- ⏳ 文件上傳
-- ⏳ Agent 設定介面
-- ⏳ 對話歷史管理
-
-## 🎨 設計特點
-
-### 1. **LobeHub UI 元素**
-
-- 漸變背景（`from-blue-600 to-purple-600`）
-- 圓角卡片設計（`rounded-2xl`）
-- 柔和陰影效果（`shadow-sm`）
-- 平滑過渡動畫（`transition-all duration-200`）
-
-### 2. **響應式設計**
-
-- 側邊欄固定寬度 256px
-- 聊天內容最大寬度 768px
-- 自動適配移動端
-
-### 3. **交互體驗**
-
-- Markdown 實時渲染
-- 代碼語法高亮
-- 自動滾動到最新消息
-- 輸入框自動調整高度
-
-## 🔧 配置
-
-### 環境變數
-
-```bash
-BACKEND_HOST=0.0.0.0      # 後端 API 主機
-BACKEND_PORT=8001           # 後端 API 端口
-FRONTEND_HOST=0.0.0.0     # 前端服務主機
-FRONTEND_PORT=8002          # 前端服務端口
-```
-
-## 🛠️ 開發指南
-
-### 修改 UI 樣式
-
-所有樣式使用 Tailwind CSS，直接修改 HTML 模板即可：
-
-```html
-<!-- 修改按鈕顏色 -->
-<button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 ...">
-    發送
-</button>
-```
-
-### 添加新頁面
-
-1. 在 `templates/` 建立新的 HTML 檔案
-2. 在 `main.py` 添加路由：
-
-```python
-@app.get("/new-page")
-async def new_page(request: Request):
-    return templates.TemplateResponse(
-        "new-page.html",
-        {"request": request, "backend_url": BACKEND_URL}
-    )
-```
-
-### 自定義主題
-
-修改 `base.html` 中的 CSS 變數：
-
-```css
-:root {
-    --lobe-bg: #ffffff;
-    --lobe-text: #111827;
-    /* ... */
-}
-
-.dark {
-    --lobe-bg: #0f172a;
-    --lobe-text: #f1f5f9;
-    /* ... */
+### 1. Alpine.js 響應式邏輯
+使用輕量級的 Alpine.js 處理前端狀態，無需複雜的 React Hooks：
+```javascript
+function chatApp() {
+    return {
+        messages: [],
+        inputMessage: '',
+        isLoading: false,
+        async sendMessage() {
+            if (!this.inputMessage.trim()) return;
+            this.messages.push({ role: 'user', content: this.inputMessage });
+            // API 交互...
+        }
+    }
 }
 ```
 
-## 📊 性能對比
+### 2. Markdown 渲染配置
+結合 `Marked.js` 與 `Highlight.js` 實現無縫渲染：
+```javascript
+marked.setOptions({
+    highlight: function(code, lang) {
+        return hljs.highlight(code, { language: lang }).value;
+    },
+    breaks: true
+});
+```
 
-| 指標 | LobeHub | Web Lite V2 |
-|------|---------|-------------|
-| **首次加載** | ~2MB | ~100KB |
-| **JS 包大小** | ~800KB | ~50KB (CDN) |
-| **構建時間** | 需要 Webpack | 無需構建 |
-| **AI 可修改性** | 複雜 | 簡單（改 HTML） |
+## 🧠 技術架構決策
 
-## 🔄 與 web-lite 的區別
+### 為什麼選擇 Web Lite V2 而非 React/Next.js？
 
-| 項目 | web-lite | web-lite-v2 |
+1.  **專案定位**: MartletMolt 的核心是 AI 物種進化，UI 應該是「可被 AI 輕鬆改寫的」，React 的構建屏障（JSX, Bundling）會增加 AI 修改的難度。
+2.  **單一技術棧**: 開發者只需要懂得 Python 和基礎 HTML，即可同時維護前後端。
+3.  **零構建成本**: 隨改隨看，無需等待 `npm run build`，極其適合快速迭代。
+4.  **A/B 系統協同**: 在自我演化過程中，能夠快速生成多套 UI 變體進行對比測試。
+
+## 📊 性能表現
+- **首次加載體積**: ~100KB (不含 CDN 緩存)
+- **JS 包大小**: ~50KB (CDN 加載，互不阻塞)
+- **構建時間**: 0 秒 (無需構建)
+
+## 🔄 與舊版 web-lite 對比
+| 項目 | web-lite (v1) | web-lite-v2 |
 |------|----------|-------------|
-| **UI 風格** | 基礎 Tailwind | LobeHub 風格 |
-| **響應式** | Alpine.js | Alpine.js (增強) |
-| **Markdown** | 無 | Marked.js |
-| **主題切換** | 無 | 明暗雙主題 |
-| **動畫效果** | 少 | 豐富 |
+| **UI 風格** | 基礎 Tailwind | LobeHub 風格 ✨ |
+| **響應式** | 原生 JS | Alpine.js 增強 ✨ |
+| **Markdown** | 無 | Marked.js + Highlight.js ✨ |
+| **主題** | 單一模式 | 明暗雙主題切換 ✨ |
 
-## 🚀 未來規劃
-
-### 階段 2（串流響應）
-
-- 實現 SSE 即時響應
-- 打字機效果顯示
-- 支援中斷生成
-
-### 階段 3（會話管理）
-
-- 多會話列表
-- 會話歷史記錄
-- 會話搜索功能
-
-### 階段 4（進階功能）
-
-- 文件上傳
-- Agent 設定介面
-- 工具管理面板
+## ✅ 測試驗證
+- [x] 服務啟動與端口導向 (8002)
+- [x] 跨域 API 調用測試 (8001)
+- [x] 暗色模式切換與持久化
+- [x] 手機端響應式布局適配
 
 ## 📝 版本歷史
-
-- **v0.2.0** (2025-02-22) - 輕量化版 LobeHub UI 架構
-- **v0.1.0** (2025-02-21) - 初始 web-lite 版本
+- **v0.2.0** (2025-02-22) - 引入 LobeHub UI 規範，完成完整架構遷移。
+- **v0.1.0** (2025-02-21) - 初始實驗版本。
 
 ## 📄 License
-
 MIT
 
 ---
-
 **MartletMolt** - Self-Evolving AI Agent System 🦅
