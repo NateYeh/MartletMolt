@@ -6,8 +6,8 @@ MartletMolt 前端專案目錄。支援多個 Web UI 專案共同存在，讓系
 
 | 專案 | 狀態 | 技術棧 | 說明 |
 |------|------|--------|------|
-| [web-lite](./web-lite/) | ✅ 使用中 | Tailwind + HTMX + Jinja2 | 輕量級服務端渲染 UI |
-| (未來擴展) | 🔲 規劃中 | React/Vue/Svelte? | 現代前端框架 |
+| [web-lite-v2](./web-lite-v2/) | ✅ 推薦使用 | Tailwind + Alpine.js + Jinja2 | **輕量化版 LobeHub UI** |
+| [web-lite](./web-lite/) | ⚠️ 舊版本 | Tailwind + HTMX + Jinja2 | 基礎版本（已棄用） |
 
 ## 目錄結構
 
@@ -30,25 +30,47 @@ frontend/
 
 ## 架構說明
 
-### Web Lite（目前使用）
+### Web Lite V2（推薦使用）
 
-輕量級、服務端渲染的 Web UI：
+**輕量化版 LobeHub UI**：
 
+- **LobeHub 風格** - 現代化設計，漸變背景，圓角卡片
 - **Tailwind CSS** - 透過 CDN 加載，無需打包工具
-- **HTMX** - 動態更新（已引入，待擴展）
+- **Alpine.js** - 輕量響應式框架（~15KB）
+- **Markdown 渲染** - Marked.js + Highlight.js
+- **主題切換** - 明暗雙主題支援
+- **AI 友善** - 純 HTML 模板，易於 AI 修改
+
+**詳細說明請參考 [web-lite-v2/README.md](./web-lite-v2/README.md)**
+
+### Web Lite（舊版本）
+
+輕量級、服務端渲染的 Web UI（已棄用）：
+
+- **Tailwind CSS** - 透過 CDN 加載
+- **HTMX** - 動態更新
 - **Jinja2** - FastAPI 模板渲染
-- **原生 JavaScript** - 前端邏輯
 
 詳細說明請參考 [web-lite/README.md](./web-lite/README.md)
 
-### 未來擴展（規劃中）
+### 技術選擇說明
 
-第二個 UI 專案可考慮以下技術：
+#### 為什麼選擇 Web Lite V2？
 
-- **React** + Vite / Next.js
-- **Vue** + Vite / Nuxt
-- **Svelte** + SvelteKit
-- **Solid** + SolidStart
+1. **符合專案定位** - 輕量化、快速部署、AI 可修改
+2. **現代化 UI** - 採用 LobeHub 設計風格
+3. **服務端渲染** - 降低前端複雜度
+4. **零構建工具** - 全部使用 CDN，無需 Webpack/Vite
+5. **AI 友善** - 純 HTML 模板，AI 可直接修改
+
+#### 為什麼不使用 React/Next.js？
+
+- ❌ 違背「輕量化」設計理念
+- ❌ 增加 AI 自我修改的複雜度
+- ❌ 需要維護雙技術棧（Python + Node.js）
+- ❌ A/B 系統架構難以協調
+
+**詳細討論請參考 [技術架構決策](../docs/architecture-decisions.md)**
 
 ## 配置方式
 

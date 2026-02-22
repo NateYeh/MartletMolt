@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}聊天 - MartletMolt{% endblock %}
+
+{% block content %}
+<!-- 頂部導航欄 -->
+<header class="h-16 border-b border-gray-200 dark:border-slate-700 flex items-center px-6 bg-white dark:bg-slate-900 flex-shrink-0">
+    <div class="flex items-center justify-between w-full">
+        <div class="flex items-center space-x-4">
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100">新對話</h1>
+            <span class="px-3 py-1 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full">
+                Session: default
+            </span>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <!-- 清空對話按鈕 -->
+            <button @click="clearMessages()" 
+                    x-show="messages.length > 0"
+                    class="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    title="清空對話">
+                <svg class="w-5 h-5 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- 聊天主區域 -->
+<div class="flex-1 flex flex-col overflow-hidden" x-data="chatApp()" x-init="init()">
+    <!-- 消息列表 -->
+    <div id="chat-messages" 
+         x-ref="messagesContainer"
+         class="flex-1 overflow-y-auto px-6 py-6 scroll-smooth">
+        
+        <!-- 空狀態 - 歡迎訊息 -->
+        <div x-show="messages.length === 0 && !isLoading" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform translate-y-4"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             class="h-full flex flex-col items-center justify-center max-w-3xl mx-auto w-full fade-in">
+            
+            <!-- Logo 動畫 -->
+            <div class="text-7xl mb-6 animate-bounce-slow">🦅</div>
+            
+            <!-- 標題 -->
+            <h2 class="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                歡迎使用 MartletMolt
+            </h2>
+            
+            <p class="text-gray-500 dark:text-slate-400 text-lg mb-8 text-center">
+                自我進化的 AI Agent 系統<br>
+                <span class="text-sm">開始對話，見證 AI 自我修改的力量</span>
+            </p>
+            
+            <!-- 快捷建議按鈕 -->
+            <div class="grid grid-cols-2 gap-3 w-full max-w-2xl">
+                <template x-for="(suggestion, index) in suggestions" :key="index">
+                    <button @click="sendSuggestion(suggestion.text)"
+                            class="group px-4 py-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-200 text-left">
+                        <div class="text-2xl mb-2" x-text="suggestion.icon"></div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400" x-text="suggestion.text"></div>
+                    </button>
+                </template>
+            </div>
+        </div>
+        
+        <!-- 消息列表 -->
+        <div x-show="messages.length > 0" class="max-w-3xl mx-auto w-full space-y-6">
+            <template x-for="(message, index) in messages" :key="index">
+                <div class="flex gap-3 fade-in" 
+                     :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 transform translate-y-2"
+                     x-transition:enter-end="opacity-100 transform translate-y-0">
+                    
+                    <!-- Avatar -->
+                    <div x-show="message.role === 'assistant'" class="flex-shrink-0">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-sm">
+                            🦅
+                        </div>
+                    </div>
+                    
+                    <!-- 消息內容 -->
+                    <div class="flex-1 max-w-[85%]" :class="message.role === 'user' ? 'order-1' : ''">
+                        <!-- 角色標籤 -->
+                        <div class="flex items-center mb-2" :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
+                            <span class="text-xs font-medium text-gray-500 dark:text-slate-400" 
+                                  x-text="message.role === 'user' ? '你' : 'MartletMolt'"></span>
+                            <span x-show="message.role === 'assistant'" class="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
+                                AI
+                            </span>
+                        </div>
+                        
+                        <!-- 消息框 -->
+                        <div class="rounded-2xl px-4 py-3 shadow-sm"
+                             :class="message.role === 'user' 
+                                    ? 'bg-blue-600 text-white rounded-tr-sm' 
+                                    : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-tl-sm'">
+                            <div class="markdown-body"
+                                 :class="message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'"
+                                 x-html="renderMarkdown(message.content)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- User Avatar -->
+                    <div x-show="message.role === 'user'" class="flex-shrink-0 order-2">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-lg shadow-sm">
+                            👤
+                        </div>
+                    </div>
+                </div>
+            </template>
+            
+            <!-- 載入指示器 -->
+            <div x-show="isLoading" 
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 class="flex gap-3 fade-in">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0">
+                    🦅
+                </div>
+                <div class="flex-1 max-w-[85%]">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex items-center space-x-1">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                            </div>
+                            <span class="text-sm text-gray-500 dark:text-slate-400">思考中...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 輸入區域 -->
+    <div class="border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 flex-shrink-0">
+        <form @submit.prevent="sendMessage()" class="max-w-3xl mx-auto">
+            <!-- 輸入框容器 -->
+            <div class="relative bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-slate-600 shadow-lg hover:shadow-xl transition-shadow duration-200 focus-within:border-blue-500 dark:focus-within:border-blue-500">
+                <!-- Textarea -->
+                <textarea x-model="inputMessage"
+                          @keydown.enter="if (!event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                          @input="autoResize($event)"
+                          placeholder="輸入訊息... (Shift+Enter 換行)"
+                          rows="1"
+                          class="w-full bg-transparent px-4 py-4 pr-32 resize-none focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-slate-500"
+                          :disabled="isLoading"
+                          style="max-height: 200px;">
+                </textarea>
+                
+                <!-- 工具列 -->
+                <div class="absolute bottom-3 right-3 flex items-center space-x-2">
+                    <!-- 附加功能按鈕 -->
+                    <button type="button" 
+                            class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group"
+                            title="上傳文件（開發中）">
+                        <svg class="w-5 h-5 text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- 發送按鈕 -->
+                    <button type="submit"
+                            :disabled="!inputMessage.trim() || isLoading"
+                            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        <span>發送</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 底部提示 -->
+            <p class="text-xs text-gray-400 dark:text-slate-500 text-center mt-3">
+                MartletMolt 可能會產生不準確的資訊，請驗證重要內容。
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function chatApp() {
+    return {
+        messages: [],
+        inputMessage: '',
+        isLoading: false,
+        sessionId: 'default',
+        
+        suggestions: [
+            { icon: '🤖', text: '什麼是自我進化 AI？' },
+            { icon: '🏗️', text: '分析 MartletMolt 的架構' },
+            { icon: '🔧', text: '介紹工具系統的功能' },
+            { icon: '🚀', text: '如何觸發進化流程？' },
+        ],
+        
+        init() {
+            console.log('[ChatApp] 初始化完成');
+            this.loadSessionId();
+        },
+        
+        loadSessionId() {
+            // 從 URL 參數或 localStorage 載入 session_id
+            const urlParams = new URLSearchParams(window.location.search);
+            this.sessionId = urlParams.get('session') || localStorage.getItem('sessionId') || 'default';
+        },
+        
+        async sendMessage() {
+            const message = this.inputMessage.trim();
+            if (!message || this.isLoading) return;
+            
+            // 添加用戶消息
+            this.messages.push({ role: 'user', content: message });
+            this.inputMessage = '';
+            this.isLoading = true;
+            
+            // 重置 textarea 高度
+            const textarea = document.querySelector('textarea');
+            if (textarea) textarea.style.height = 'auto';
+            
+            try {
+                const response = await fetch('{{ backend_url }}/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: message, 
+                        session_id: this.sessionId 
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.message) {
+                    this.messages.push({ role: 'assistant', content: data.message });
+                } else if (data.detail) {
+                    this.messages.push({ role: 'assistant', content: `錯誤: ${data.detail}` });
+                }
+            } catch (error) {
+                console.error('[ChatApp] Error:', error);
+                this.messages.push({ 
+                    role: 'assistant', 
+                    content: `抱歉，發生錯誤：${error.message}\n\n請檢查後端服務是否正常運行。` 
+                });
+            } finally {
+                this.isLoading = false;
+                this.scrollToBottom();
+            }
+        },
+        
+        sendSuggestion(suggestion) {
+            this.inputMessage = suggestion;
+            this.sendMessage();
+        },
+        
+        clearMessages() {
+            if (confirm('確定要清空所有對話記錄嗎？')) {
+                this.messages = [];
+                this.sessionId = 'default';
+            }
+        },
+        
+        scrollToBottom() {
+            this.$nextTick(() => {
+                const container = this.$refs.messagesContainer;
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
+        },
+        
+        autoResize(event) {
+            const textarea = event.target;
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        },
+        
+        renderMarkdown(content) {
+            if (!content) return '';
+            
+            try {
+                // 使用 marked 解析 Markdown
+                const html = marked.parse(content);
+                return html;
+            } catch (error) {
+                console.error('[ChatApp] Markdown 解析錯誤:', error);
+                return content;
+            }
+        }
+    }
+}
+</script>
+
+<!-- 隱藏元素樣式 (避免 Alpine.js 閃爍) -->
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}

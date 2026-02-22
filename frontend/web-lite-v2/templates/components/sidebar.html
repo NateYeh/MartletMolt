@@ -1,0 +1,125 @@
+<!-- 側邊欄組件 - LobeHub 風格 -->
+<aside class="w-64 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex flex-col h-full flex-shrink-0">
+    <!-- Logo 區域 -->
+    <div class="h-16 flex items-center px-6 border-b border-gray-200 dark:border-slate-700 flex-shrink-0">
+        <a href="/" class="flex items-center space-x-2 group">
+            <span class="text-3xl transform group-hover:rotate-12 transition-transform duration-200">🦅</span>
+            <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                MartletMolt
+            </span>
+        </a>
+    </div>
+    
+    <!-- 新建對話按鈕 -->
+    <div class="p-3 border-b border-gray-200 dark:border-slate-700">
+        <button onclick="window.location.href='/chat'" 
+                class="w-full flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md active:scale-95">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            新對話
+        </button>
+    </div>
+    
+    <!-- 導航菜單 -->
+    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+        <!-- 對話 -->
+        <a href="/chat" 
+           class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 
+                  {% if request.path == '/chat' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800{% endif %}">
+            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <span class="font-medium">對話</span>
+        </a>
+        
+        <!-- 分隔線 -->
+        <div class="h-px bg-gray-200 dark:bg-slate-700 my-3"></div>
+        
+        <!-- 功能開發中提示 -->
+        <div class="text-xs text-gray-400 dark:text-slate-500 px-4 py-2 uppercase tracking-wider font-medium">
+            功能開發中
+        </div>
+        
+        <!-- Agent 設定 -->
+        <a href="#" 
+           class="flex items-center px-4 py-3 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 opacity-50 cursor-not-allowed"
+           onclick="event.preventDefault()">
+            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+            </svg>
+            <span>Agent 設定</span>
+        </a>
+        
+        <!-- 工具管理 -->
+        <a href="#" 
+           class="flex items-center px-4 py-3 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 opacity-50 cursor-not-allowed"
+           onclick="event.preventDefault()">
+            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            <span>工具管理</span>
+        </a>
+        
+        <!-- 歷史記錄 -->
+        <a href="#" 
+           class="flex items-center px-4 py-3 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 opacity-50 cursor-not-allowed"
+           onclick="event.preventDefault()">
+            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>歷史記錄</span>
+        </a>
+    </nav>
+    
+    <!-- 底部用戶區域 -->
+    <div class="border-t border-gray-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900 flex-shrink-0">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3 flex-1 min-w-0">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0 shadow-sm">
+                    M
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">用戶</div>
+                    <div class="text-xs text-gray-500 dark:text-slate-400 truncate">Self-Evolving AI</div>
+                </div>
+            </div>
+            
+            <!-- 主題切換按鈕 -->
+            <button @click="darkMode = !darkMode; localStorage.setItem('theme', darkMode ? 'dark' : 'light')" 
+                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 flex-shrink-0"
+                    :title="darkMode ? '切換到亮色模式' : '切換到暗色模式'">
+                <!-- 太陽圖標 (亮色模式) -->
+                <svg x-show="!darkMode" 
+                     class="w-5 h-5 text-gray-600 dark:text-slate-400" 
+                     fill="none" 
+                     stroke="currentColor" 
+                     viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <!-- 月亮圖標 (暗色模式) -->
+                <svg x-show="darkMode" 
+                     class="w-5 h-5 text-gray-600 dark:text-slate-400" 
+                     fill="none" 
+                     stroke="currentColor" 
+                     viewBox="0 0 24 24"
+                     x-cloak>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- 系統狀態 -->
+        <div class="mt-3 text-xs text-gray-400 dark:text-slate-500">
+            <div class="flex items-center justify-between">
+                <span>Backend:</span>
+                <span class="text-green-500 dark:text-green-400">{{ backend_url }}</span>
+            </div>
+        </div>
+    </div>
+</aside>

@@ -9,7 +9,7 @@
 **MartletMolt** 是一個自我進化的 AI Agent 系統，具備自我修改、自我重啟、自我進化的能力。
 
 - **定位**：Self-Evolving AI Agent System
-- **技術棧**：Python 3.11+ / FastAPI / Playwright / HTMX
+- **技術棧**：Python 3.11+ / FastAPI / Playwright / Tailwind CSS / Alpine.js
 - **核心特點**：A/B 雙系統架構、零停機進化、網頁自動化
 
 ---
@@ -49,9 +49,10 @@
 | `system_a/` | A 系統（純 API 後端，Agent/Tools/Providers） |
 | `system_b/` | B 系統（純 API 後端，Agent/Tools/Providers） |
 | `frontend/` | **前端專案目錄（多 UI 專案）** |
-| `frontend/web-lite/` | 輕量級前端服務（獨立 FastAPI，Port 8002） |
-| `frontend/web-lite/templates/` | HTML 模板（Jinja2） |
-| `frontend/web-lite/static/` | 靜態資源（CSS、JS） |
+| `frontend/web-lite-v2/` | 輕量化版 LobeHub UI（推薦，獨立 FastAPI，Port 8002） |
+| `frontend/web-lite/` | 舊版前端服務（已棄用） |
+| `frontend/web-lite-v2/templates/` | HTML 模板（Jinja2 + LobeHub 風格） |
+| `frontend/web-lite-v2/static/` | 靜態資源（CSS、JS） |
 | `shared/` | 運行時共享資料（不上傳 Git） |
 | `shared/data/` | 共享資料（sessions、transcripts） |
 | `shared/logs/` | 共享日誌 |
@@ -92,18 +93,19 @@ system_a/martlet_molt/
 # 前端專案（獨立於後端，多 UI 專案）
 frontend/
 ├── README.md               # 前端總覽說明
-└── web-lite/               # 輕量級前端服務（Port 8002）
-    ├── main.py             # FastAPI 入口
-    ├── config.py           # 配置管理
-    ├── routes.py           # 前端路由
-    ├── README.md           # 說明文件
-    ├── templates/          # HTML 模板 (Jinja2)
-    │   ├── components/     # 可重用元件
-    │   ├── index.html      # 首頁
-    │   └── chat.html       # 聊天頁面
-    └── static/             # 靜態資源
-        ├── css/
-        └── js/
+├── web-lite-v2/            # 輕量化版 LobeHub UI（推薦，Port 8002）
+│   ├── main.py             # FastAPI 入口
+│   ├── templates/          # HTML 模板 (Jinja2 + LobeHub 風格)
+│   │   ├── base.html       # 基礎模板
+│   │   ├── index.html      # 首頁
+│   │   ├── chat.html       # 聊天頁面
+│   │   └── components/     # 可重用元件
+│   │       └── sidebar.html # 側邊欄組件
+│   ├── static/             # 靜態資源
+│   │   ├── css/
+│   │   └── js/
+│   └── README.md           # 說明文件
+└── web-lite/               # 舊版前端服務（已棄用）
 
 # 運行時共享資料
 shared/
