@@ -95,7 +95,7 @@ def main():
     # 同步執行非同步檢查
     import asyncio
     is_backend_up = asyncio.run(check_backend())
-    
+
     if not is_backend_up:
         logger.warning("⚠️ 警告: 目前偵測不到後端服務，前端雖然可以啟動，但聊天功能可能無法使用唷！")
 
