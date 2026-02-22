@@ -261,13 +261,108 @@ async def _chat_once(message: str, session_id: str, provider_name: str) -> None:
         logger.exception("Chat error")
 
 
-async def _chat_interactive(session_id: str, provider_name: str) -> None:
+def _init_session(session: "Session", agent: "Agent") -> None:
     """
-    互動對話模式
+    初始化會話，添加系統提示（如果是新會話）。
 
     Args:
-        session_id: 會話 ID
-        provider_name: Provider 名稱
+        session: 會話實例。
+        agent: Agent 實例。
+    """
+    if len(session.messages) == 0 and settings.agent.system_prompt:
+        agent.add_system_prompt(settings.agent.system_prompt)
+
+
+def _handle_command(
+    command: str,
+    agent: "Agent",
+    provider: BaseProvider,
+    session_id: str,
+) -> tuple[bool, "Session", "Agent"]:
+    """
+    處理用戶命令。
+
+    Args:
+        command: 用戶輸入的命令。
+        agent: 當前 Agent 實例。
+        provider: Provider 實例。
+        session_id: 當前會話 ID。
+
+    Returns:
+        tuple: (should_exit, session, agent)
+        - should_exit: 是否應該退出互動模式
+        - session: 當前會話（可能是新的）
+        - agent: 當前 Agent（可能是新的）
+    """
+    command_lower = command.lower()
+
+    if command_lower == "exit":
+        console.print("[dim]Goodbye![/dim]")
+        return True, agent.session, agent
+
+    if command_lower == "clear":
+        agent.reset()
+        console.print("[dim]Session cleared.[/dim]")
+        return False, agent.session, agent
+
+    if command_lower == "new":
+        new_session_id, new_session, new_agent = _create_new_session(provider)
+        console.print(f"[dim]New session created: {new_session_id}[/dim]")
+        return False, new_session, new_agent
+
+    return False, agent.session, agent
+
+
+def _create_new_session(provider: BaseProvider) -> tuple[str, "Session", "Agent"]:
+    """
+    創建新會話並返回相關實例。
+
+    Args:
+        provider: Provider 實例。
+
+    Returns:
+        tuple: (session_id, session, agent)
+    """
+    import uuid
+
+    session_id = f"session_{uuid.uuid4().hex[:8]}"
+    session = session_manager.create(session_id)
+    agent = Agent(provider=provider, session=session)
+
+    if settings.agent.system_prompt:
+        agent.add_system_prompt(settings.agent.system_prompt)
+
+    return session_id, session, agent
+
+
+async def _send_and_display(agent: "Agent", message: str) -> str:
+    """
+    發送訊息並顯示 AI 回應。
+
+    Args:
+        agent: Agent 實例。
+        message: 用戶訊息。
+
+    Returns:
+        AI 回應內容。
+    """
+    with console.status("[bold green]Thinking...[/bold green]"):
+        response = await agent.chat(message)
+
+    console.print()
+    console.print(Panel(Markdown(response), title="[bold green]Assistant[/bold green]", border_style="green"))
+    console.print()
+
+    return response
+
+
+async def _chat_interactive(session_id: str, provider_name: str) -> None:
+    """
+    互動對話模式。
+
+    Args:
+        session_id: 會話 ID。
+        provider_name: Provider 名稱。
     """
     console.print(f"[bold green]MartletMolt v{__version__}[/bold green]")
     console.print(f"[dim]Session: {session_id}[/dim]")
@@ -281,9 +376,8 @@ async def _chat_interactive(session_id: str, provider_name: str) -> None:
         session = session_manager.get_or_create(session_id)
         agent = Agent(provider=provider, session=session)
 
-        # 添加系統提示（如果是新會話）
-        if len(session.messages) == 0 and settings.agent.system_prompt:
-            agent.add_system_prompt(settings.agent.system_prompt)
+        # 初始化會話
+        _init_session(session, agent)
 
         # 顯示歷史記錄
         if len(session.messages) > 0:
@@ -298,30 +392,16 @@ async def _chat_interactive(session_id: str, provider_name: str) -> None:
                     continue
 
                 # 處理命令
-                if user_input.lower() == "exit":
-                    console.print("[dim]Goodbye![/dim]")
+                should_exit, session, agent = _handle_command(user_input, agent, provider, session_id)
+                if should_exit:
                     break
-                elif user_input.lower() == "clear":
-                    agent.reset()
-                    console.print("[dim]Session cleared.[/dim]")
-                    continue
-                elif user_input.lower() == "new":
-                    session_id = f"session_{__import__('uuid').uuid4().hex[:8]}"
-                    session = session_manager.create(session_id)
-                    agent = Agent(provider=provider, session=session)
-                    if settings.agent.system_prompt:
-                        agent.add_system_prompt(settings.agent.system_prompt)
-                    console.print(f"[dim]New session created: {session_id}[/dim]")
+
+                # 如果是命令處理後更新了 session，跳過本次對話
+                if user_input.lower() in ("clear", "new"):
                     continue
 
                 # 發送請求並顯示回應
-                with console.status("[bold green]Thinking...[/bold green]"):
-                    response = await agent.chat(user_input)
-
-                # 顯示 AI 回應
-                console.print()
-                console.print(Panel(Markdown(response), title="[bold green]Assistant[/bold green]", border_style="green"))
-                console.print()
+                await _send_and_display(agent, user_input)
 
             except KeyboardInterrupt:
                 console.print("\n[dim]Goodbye![/dim]")
