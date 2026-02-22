@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from loguru import logger
 
 from martlet_molt.core.config import settings
+from martlet_molt.gateway.device_handler import router as device_router
 from martlet_molt.gateway.routes import router
 
 # 設定 loguru
@@ -45,6 +46,8 @@ def create_app() -> FastAPI:
 
     # 註冊 API 路由
     app.include_router(router)
+    # 註冊裝置連線路由
+    app.include_router(device_router)
 
     return app
 

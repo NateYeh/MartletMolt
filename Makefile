@@ -96,7 +96,7 @@ sync:
 	@echo "  make sync-a-to-b    # backend/system_a → backend/system_b"
 	@echo "  make sync-b-to-a    # backend/system_b → backend/system_a"
 	@echo ""
-	@echo "同步的模組：channels, tools, providers, core"
+	@echo "同步的模組：channels, tools, providers, core, gateway"
 	@echo ""
 	@echo "指定模組："
 	@echo "  python scripts/sync_systems.py b-to-a --modules channels tools"

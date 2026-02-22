@@ -124,6 +124,7 @@ class ToolRegistry:
         """註冊預設工具"""
         from martlet_molt.tools.file_read import FileReadTool
         from martlet_molt.tools.file_write import FileWriteTool
+        from martlet_molt.tools.iot_control import IOTControlTool
         from martlet_molt.tools.shell import ShellTool
         from martlet_molt.tools.web_click import WebClickTool
         from martlet_molt.tools.web_evaluate import WebEvaluateTool
@@ -139,3 +140,4 @@ class ToolRegistry:
         self.register(ShellTool())
         self.register(FileReadTool())
         self.register(FileWriteTool())
+        self.register(IOTControlTool())

@@ -13,6 +13,7 @@ SYNC_MODULES = [
     "tools",
     "providers",
     "core",
+    "gateway",
 ]
 
 
