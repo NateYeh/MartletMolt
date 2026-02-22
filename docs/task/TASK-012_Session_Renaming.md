@@ -27,7 +27,7 @@
 修改 `martlet_molt/core/session.py` 中的 `Session` 類別，確保包含標題屬性。
 
 ### 2. 管理器邏輯
-在 `SessionManager` 增加 `update_session_title(session_id, title)` 方法。考慮到目前的 `.jsonl` 儲存方式，更新標題時需寫入新的狀態行。
+在 `SessionManager` 增加 `update_session_title(session_id, title)` 方法。由於目前已切換為 SQLite 存儲，更新標題只需執行單條 SQL UPDATE 語句，效率極高。
 
 ### 3. API 實作
 在 `martlet_molt/gateway/routes.py` 增加對應的隨機路由：
