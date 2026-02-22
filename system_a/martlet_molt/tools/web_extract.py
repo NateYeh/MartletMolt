@@ -44,86 +44,157 @@ class WebExtractTool(BaseTool):
             return self._navigate_tool._page
         raise RuntimeError("No page available. Please navigate first.")
 
+    def _extract_text(self, page) -> ToolResult:
+        """
+        提取頁面文字內容。
+
+        Args:
+            page: Playwright 頁面實例。
+
+        Returns:
+            提取結果。
+        """
+        content = page.inner_text("body")
+        return ToolResult(
+            success=True,
+            data={"content": content, "length": len(content)},
+        )
+
+    def _extract_html(self, page) -> ToolResult:
+        """
+        提取頁面 HTML 內容。
+
+        Args:
+            page: Playwright 頁面實例。
+
+        Returns:
+            提取結果。
+        """
+        content = page.content()
+        return ToolResult(
+            success=True,
+            data={"html": content, "length": len(content)},
+        )
+
+    def _extract_elements(
+        self,
+        page,
+        selector: str | None,
+        attribute: str | None,
+    ) -> ToolResult:
+        """
+        提取特定元素。
+
+        Args:
+            page: Playwright 頁面實例。
+            selector: CSS 選擇器。
+            attribute: 要提取的屬性名稱。
+
+        Returns:
+            提取結果。
+        """
+        if not selector:
+            return ToolResult(
+                success=False,
+                error="selector is required for extract_type=elements",
+            )
+
+        elements = page.query_selector_all(selector)
+        results = []
+
+        for el in elements:
+            if attribute:
+                value = el.get_attribute(attribute)
+                results.append(value)
+            else:
+                results.append(el.inner_text())
+
+        return ToolResult(
+            success=True,
+            data={"elements": results, "count": len(results)},
+        )
+
+    def _extract_links(self, page) -> ToolResult:
+        """
+        提取頁面所有連結。
+
+        Args:
+            page: Playwright 頁面實例。
+
+        Returns:
+            提取結果。
+        """
+        links = page.query_selector_all("a[href]")
+        results = [
+            {
+                "text": link.inner_text(),
+                "href": link.get_attribute("href"),
+            }
+            for link in links
+        ]
+        return ToolResult(
+            success=True,
+            data={"links": results, "count": len(results)},
+        )
+
+    def _extract_images(self, page) -> ToolResult:
+        """
+        提取頁面所有圖片。
+
+        Args:
+            page: Playwright 頁面實例。
+
+        Returns:
+            提取結果。
+        """
+        images = page.query_selector_all("img")
+        results = [
+            {
+                "alt": img.get_attribute("alt"),
+                "src": img.get_attribute("src"),
+            }
+            for img in images
+        ]
+        return ToolResult(
+            success=True,
+            data={"images": results, "count": len(results)},
+        )
+
     def execute(
         self,
         extract_type: Literal["text", "html", "elements", "links", "images"] = "text",
         selector: str | None = None,
         attribute: str | None = None,
     ) -> ToolResult:
-        """執行內容提取"""
+        """
+        執行內容提取。
+
+        Args:
+            extract_type: 提取類型（text/html/elements/links/images）。
+            selector: CSS 選擇器（當 extract_type=elements 時使用）。
+            attribute: 要提取的屬性名稱。
+
+        Returns:
+            提取結果。
+        """
+        extractors = {
+            "text": lambda page: self._extract_text(page),
+            "html": lambda page: self._extract_html(page),
+            "elements": lambda page: self._extract_elements(page, selector, attribute),
+            "links": lambda page: self._extract_links(page),
+            "images": lambda page: self._extract_images(page),
+        }
+
+        extractor = extractors.get(extract_type)
+        if not extractor:
+            return ToolResult(
+                success=False,
+                error=f"Unknown extract_type: {extract_type}",
+            )
+
         try:
             page = self._get_page()
-
-            if extract_type == "text":
-                content = page.inner_text("body")
-                return ToolResult(
-                    success=True,
-                    data={"content": content, "length": len(content)},
-                )
-
-            elif extract_type == "html":
-                content = page.content()
-                return ToolResult(
-                    success=True,
-                    data={"html": content, "length": len(content)},
-                )
-
-            elif extract_type == "elements":
-                if not selector:
-                    return ToolResult(
-                        success=False,
-                        error="selector is required for extract_type=elements",
-                    )
-
-                elements = page.query_selector_all(selector)
-                results = []
-
-                for el in elements:
-                    if attribute:
-                        value = el.get_attribute(attribute)
-                        results.append(value)
-                    else:
-                        results.append(el.inner_text())
-
-                return ToolResult(
-                    success=True,
-                    data={"elements": results, "count": len(results)},
-                )
-
-            elif extract_type == "links":
-                links = page.query_selector_all("a[href]")
-                results = [
-                    {
-                        "text": link.inner_text(),
-                        "href": link.get_attribute("href"),
-                    }
-                    for link in links
-                ]
-                return ToolResult(
-                    success=True,
-                    data={"links": results, "count": len(results)},
-                )
-
-            elif extract_type == "images":
-                images = page.query_selector_all("img")
-                results = [
-                    {
-                        "alt": img.get_attribute("alt"),
-                        "src": img.get_attribute("src"),
-                    }
-                    for img in images
-                ]
-                return ToolResult(
-                    success=True,
-                    data={"images": results, "count": len(results)},
-                )
-
-            else:
-                return ToolResult(
-                    success=False,
-                    error=f"Unknown extract_type: {extract_type}",
-                )
-
+            return extractor(page)
         except Exception as e:
             return ToolResult(
                 success=False,
