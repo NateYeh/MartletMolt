@@ -1,0 +1,96 @@
+# POST /chat - 同步對話
+
+order: 3
+title: 同步對話
+
+endpoint:
+  method: POST
+  path: /chat
+  description: 發送訊息並等待完整回應（非串流）
+
+request:
+  headers:
+    - name: Content-Type
+      value: application/json
+      required: true
+  body:
+    message: "請幫我列出專案目錄結構"
+    session_id: "default"
+  parameters:
+    - name: message
+      type: string
+      required: true
+      description: 用戶訊息內容
+    - name: session_id
+      type: string
+      required: false
+      default: "default"
+      description: 會話 ID，用於持久化對話歷史
+    - name: stream
+      type: boolean
+      required: false
+      default: false
+      description: 是否使用串流（此端點忽略此參數）
+
+response:
+  status_code: 200
+  description: 請求成功
+  body:
+    message: |
+      好的，我幫您列出專案目錄結構...
+
+      專案根目錄包含：
+      - orchestrator/
+      - system_a/
+      - system_b/
+      - frontend/
+      - shared/
+      - Config/
+    session_id: "default"
+  fields:
+    - name: message
+      type: string
+      description: AI 的完整回應
+    - name: session_id
+      type: string
+      description: 會話 ID（可能與請求不同，若請求未提供則自動生成）
+
+status_codes:
+  - code: 200
+    description: 請求成功
+  - code: 400
+    description: 請求參數錯誤
+  - code: 500
+    description: 服務器內部錯誤
+
+examples:
+  curl: |
+    curl -X POST http://localhost:8001/chat \
+      -H "Content-Type: application/json" \
+      -d '{"message": "你好", "session_id": "my-session-123"}'
+
+  python: |
+    import requests
+
+    response = requests.post(
+        "http://localhost:8001/chat",
+        json={
+            "message": "你好",
+            "session_id": "my-session-123"
+        }
+    )
+    data = response.json()
+    print(data['message'])
+
+  javascript: |
+    const response = await fetch('http://localhost:8001/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: '你好',
+        session_id: 'my-session-123'
+      })
+    });
+
+    const data = await response.json();
+    console.log(data.message);

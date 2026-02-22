@@ -1,0 +1,110 @@
+# 共用資料結構與錯誤定義
+
+error_responses:
+  - status_code: 400
+    reason: Bad Request
+    description: 請求參數錯誤
+    causes:
+      - 缺少必填欄位
+      - 格式錯誤
+    example:
+      detail: "錯誤描述訊息"
+      
+  - status_code: 404
+    reason: Not Found
+    description: 找不到資源
+    causes:
+      - 錯誤的 API 路徑
+    example:
+      detail: "Resource not found"
+      
+  - status_code: 422
+    reason: Unprocessable Entity
+    description: 數據驗證失敗
+    causes:
+      - JSON 格式錯誤
+      - 欄位類型不符
+    example:
+      detail: "Validation error"
+      
+  - status_code: 500
+    reason: Internal Server Error
+    description: 服務器內部錯誤
+    causes:
+      - Provider API 錯誤
+      - 系統異常
+    example:
+      detail: "Internal server error"
+      
+  - status_code: 503
+    reason: Service Unavailable
+    description: 服務不可用
+    causes:
+      - 系統維護中
+      - 過載
+    example:
+      detail: "Service temporarily unavailable"
+
+common_schemas:
+  health_response:
+    description: 健康檢查回應
+    fields:
+      - name: status
+        type: string
+        description: 服務狀態（"running" 或 "error"）
+      - name: system
+        type: string
+        description: 當前活躍系統名稱（"SystemA" 或 "SystemB"）
+      - name: version
+        type: string
+        description: API 版本號
+
+  session_info:
+    description: 會話基本資訊
+    fields:
+      - name: id
+        type: string
+        description: 會話 ID
+      - name: created_at
+        type: string
+        description: 建立時間（ISO 8601）
+      - name: updated_at
+        type: string
+        description: 最後更新時間（ISO 8601）
+      - name: message_count
+        type: integer
+        description: 訊息數量
+      - name: tool_call_count
+        type: integer
+        description: 工具調用次數
+      - name: metadata
+        type: object
+        description: 會話元數據
+
+  message:
+    description: 訊息結構
+    fields:
+      - name: id
+        type: string
+        description: 訊息 ID
+      - name: role
+        type: string
+        description: 角色（user, assistant, system, tool）
+      - name: content
+        type: string
+        description: 訊息內容
+      - name: name
+        type: string
+        nullable: true
+        description: 名稱（可選）
+      - name: tool_call_id
+        type: string
+        nullable: true
+        description: 工具調用 ID（可選）
+      - name: tool_calls
+        type: array
+        nullable: true
+        description: 工具調用列表（可選）
+      - name: timestamp
+        type: string
+        description: 訊息時間戳（ISO 8601）

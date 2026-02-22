@@ -1,0 +1,59 @@
+# API 文件配置
+# Version: v0.1.0
+
+metadata:
+  title: MartletMolt 後端 API SDK 文件
+  version: "0.1.0"
+  base_url: http://localhost:8001
+  last_updated: 2025-01-15
+
+overview: |
+  MartletMolt 後端提供純 API 服務，支援 AI 對話功能。
+  所有端點均返回 JSON 格式數據，並支援 CORS 跨域請求。
+
+features:
+  - icon: "✅"
+    title: RESTful API
+    description: 標準 HTTP 方法與狀態碼
+  - icon: "✅"
+    title: 串流支援
+    description: Server-Sent Events (SSE) 即時串流回應
+  - icon: "✅"
+    title: 會話管理
+    description: 持久化對話歷史
+  - icon: "✅"
+    title: 多 Provider
+    description: 支援 OpenAI、Anthropic、Ollama 等
+  - icon: "✅"
+    title: Tool Calling
+    description: 支援 AI 工具調用
+
+tech_specs:
+  framework: FastAPI
+  data_format: JSON
+  encoding: UTF-8
+  cors: 已啟用
+
+quick_start:
+  - title: 啟動後端服務
+    command: |
+      # 方式一：使用 Makefile（推薦）
+      make dev-backend
+
+      # 方式二：直接執行
+      python -m martlet_molt.main
+
+      # 後端將運行於
+      # http://localhost:8001
+  - title: 驗證服務狀態
+    command: |
+      # 健康檢查
+      curl http://localhost:8001/health
+
+      # 查看系統狀態
+      curl http://localhost:8001/status
+  - title: 發送第一個請求
+    command: |
+      curl -X POST http://localhost:8001/chat \
+        -H "Content-Type: application/json" \
+        -d '{"message": "你好，請介紹一下你自己"}'

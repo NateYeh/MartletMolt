@@ -1,0 +1,64 @@
+# GET /sessions - 列出所有會話
+
+order: 5
+title: 列出所有會話
+
+endpoint:
+  method: GET
+  path: /sessions
+  description: 取得所有會話的基本資訊列表
+
+request:
+  headers:
+    - name: Host
+      value: localhost:8001
+      required: true
+
+response:
+  status_code: 200
+  description: 請求成功
+  body:
+    sessions:
+      - id: "default"
+        created_at: "2025-01-15T10:00:00"
+        updated_at: "2025-01-15T10:30:00"
+        message_count: 10
+        tool_call_count: 2
+        metadata: {}
+      - id: "coding-session"
+        created_at: "2025-01-15T09:00:00"
+        updated_at: "2025-01-15T11:00:00"
+        message_count: 25
+        tool_call_count: 5
+        metadata: {}
+    total: 2
+  fields:
+    - name: sessions
+      type: array[SessionInfo]
+      description: 會話列表
+    - name: total
+      type: integer
+      description: 總會話數
+
+examples:
+  curl: |
+    curl http://localhost:8001/sessions
+
+  python: |
+    import requests
+
+    response = requests.get("http://localhost:8001/sessions")
+    data = response.json()
+
+    print(f"總會話數: {data['total']}")
+    for session in data['sessions']:
+        print(f"- {session['id']}: {session['message_count']} 條訊息")
+
+  javascript: |
+    const response = await fetch('http://localhost:8001/sessions');
+    const data = await response.json();
+
+    console.log('總會話數:', data.total);
+    data.sessions.forEach(session => {
+      console.log(`- ${session.id}: ${session.message_count} 條訊息`);
+    });

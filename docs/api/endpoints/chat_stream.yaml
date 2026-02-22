@@ -1,0 +1,122 @@
+# POST /chat/stream - 串流對話
+
+order: 4
+title: 串流對話
+
+endpoint:
+  method: POST
+  path: /chat/stream
+  description: 發送訊息並以 Server-Sent Events (SSE) 格式串流接收回應
+
+request:
+  headers:
+    - name: Content-Type
+      value: application/json
+      required: true
+  body:
+    message: "請寫一個 Python 快速排序算法"
+    session_id: "coding-session"
+  parameters:
+    - name: message
+      type: string
+      required: true
+      description: 用戶訊息內容
+    - name: session_id
+      type: string
+      required: false
+      description: 會話 ID
+
+response:
+  status_code: 200
+  description: 請求成功（開始串流）
+  format: Server-Sent Events (SSE)
+  body: |
+    data: 這是
+
+    data: 一個
+
+    data: Python
+
+    data: 快速排序
+
+    data: 算法...
+
+    data: [DONE]
+  sse_format:
+    - type: normal
+      pattern: "data: <chunk>\\n\\n"
+      description: 正常訊息
+    - type: end
+      pattern: "data: [DONE]\\n\\n"
+      description: 結束標記
+    - type: error
+      pattern: "data: [ERROR] <error_message>\\n\\n"
+      description: 錯誤訊息
+
+status_codes:
+  - code: 200
+    description: 請求成功（開始串流）
+  - code: 400
+    description: 請求參數錯誤
+  - code: 500
+    description: 服務器內部錯誤
+
+examples:
+  curl: |
+    curl -X POST http://localhost:8001/chat/stream \
+      -H "Content-Type: application/json" \
+      -d '{"message": "寫一個 Python 快速排序", "session_id": "coding-session"}'
+
+  python: |
+    import requests
+    import sseclient  # pip install sseclient-py
+
+    response = requests.post(
+        "http://localhost:8001/chat/stream",
+        json={"message": "寫一首詩", "session_id": "test-session"},
+        stream=True
+    )
+
+    client = sseclient.SSEClient(response)
+    for event in client.events():
+        if event.data == "[DONE]":
+            break
+        elif event.data.startswith("[ERROR]"):
+            print(f"錯誤: {event.data[8:]}")
+        else:
+            print(event.data, end='', flush=True)
+
+  javascript: |
+    const response = await fetch('http://localhost:8001/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: '寫一個 Python 快速排序',
+        session_id: 'coding-session'
+      })
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.substring(6);
+          if (data === '[DONE]') {
+            console.log('串流結束');
+            break;
+          } else if (data.startsWith('[ERROR]')) {
+            console.error('錯誤:', data.substring(8));
+          } else {
+            console.log('收到:', data);
+          }
+        }
+      }
+    }

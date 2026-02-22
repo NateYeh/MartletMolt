@@ -1,4 +1,4 @@
-.PHONY: install format lint clean yaml-check yaml-fix dev dev-backend dev-frontend
+.PHONY: install format lint clean yaml-check yaml-fix dev dev-backend dev-frontend docs check-all
 
 # 安裝依賴
 install:
@@ -36,6 +36,15 @@ clean:
 
 # 完整檢查（CI/CD 用）
 ci: lint
+
+# 文檔生成
+docs:
+	@echo "📝 Generating API documentation..."
+	python tools/generate_api_docs.py
+
+# 完整檢查 + 文檔生成
+check-all: lint docs
+	@echo "✅ All checks passed and docs generated!"
 
 # ─────────────────────────────────────────────────────────
 # 開發服務啟動命令

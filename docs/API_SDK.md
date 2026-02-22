@@ -12,9 +12,13 @@
 - [快速開始](#快速開始)
 - [API 端點總覽](#api-端點總覽)
 - [詳細 API 文件](#詳細-api-文件)
-  - [系統端點](#系統端點)
-  - [對話端點](#對話端點)
-  - [會話管理端點](#會話管理端點)
+  - [1. 健康檢查](#健康檢查)
+  - [2. 系統狀態](#系統狀態)
+  - [3. 同步對話](#同步對話)
+  - [4. 串流對話](#串流對話)
+  - [5. 列出所有會話](#列出所有會話)
+  - [6. 取得會話詳情](#取得會話詳情)
+  - [7. 刪除會話](#刪除會話)
 - [錯誤處理](#錯誤處理)
 - [JavaScript/TypeScript SDK](#javascripttypescript-sdk)
 - [使用範例](#使用範例)
@@ -24,7 +28,9 @@
 
 ## 概覽
 
-MartletMolt 後端提供純 API 服務，支援 AI 對話功能。所有端點均返回 JSON 格式數據，並支援 CORS 跨域請求。
+MartletMolt 後端提供純 API 服務，支援 AI 對話功能。
+所有端點均返回 JSON 格式數據，並支援 CORS 跨域請求。
+
 
 ### 核心特性
 
@@ -56,8 +62,8 @@ python -m martlet_molt.main
 
 # 後端將運行於
 # http://localhost:8001
-```
 
+```
 ### 2. 驗證服務狀態
 
 ```bash
@@ -66,8 +72,8 @@ curl http://localhost:8001/health
 
 # 查看系統狀態
 curl http://localhost:8001/status
-```
 
+```
 ### 3. 發送第一個請求
 
 ```bash
@@ -102,11 +108,11 @@ curl -X POST http://localhost:8001/chat \
 | `GET` | `/sessions/{session_id}` | 取得會話詳情 |
 | `DELETE` | `/sessions/{session_id}` | 刪除會話 |
 
----
 
 ---
 
 ## 詳細 API 文件
+
 
 ### 1. 健康檢查
 
@@ -119,6 +125,8 @@ curl -X POST http://localhost:8001/chat \
 GET /health HTTP/1.1
 Host: localhost:8001
 ```
+
+
 
 **回應**:
 ```json
@@ -133,12 +141,17 @@ Host: localhost:8001
 
 | 欄位 | 類型 | 描述 |
 |------|------|------|
-| `status` | `string` | 服務狀態（`"running"` 或 `"error"`） |
-| `system` | `string` | 當前活躍系統名稱（`"SystemA"` 或 `"SystemB"`） |
+| `status` | `string` | 服務狀態（"running" 或 "error"） |
+| `system` | `string` | 當前活躍系統名稱（"SystemA" 或 "SystemB"） |
 | `version` | `string` | API 版本號 |
 
-**狀態碼**:
-- `200 OK`: 服務正常
+
+**範例**:
+```javascript
+const response = await fetch('http://localhost:8001/health');
+const data = await response.json();
+console.log(data);
+```
 
 ---
 
@@ -154,20 +167,22 @@ GET /status HTTP/1.1
 Host: localhost:8001
 ```
 
+
+
 **回應**:
 ```json
 {
-  "system": "SystemA",
   "active": true,
+  "model": "gpt-4o",
+  "provider": "openai",
+  "system": "SystemA",
   "tools": [
     "shell",
     "file_read",
     "file_write",
     "web_navigate",
     "web_extract"
-  ],
-  "provider": "openai",
-  "model": "gpt-4o"
+  ]
 }
 ```
 
@@ -178,11 +193,17 @@ Host: localhost:8001
 | `system` | `string` | 當前活躍系統名稱 |
 | `active` | `boolean` | 系統是否活躍 |
 | `tools` | `array[string]` | 可用工具列表 |
-| `provider` | `string` | 當前 AI Provider（`"openai"`, `"anthropic"`, `"ollama"`） |
+| `provider` | `string` | 當前 AI Provider（"openai", "anthropic", "ollama"） |
 | `model` | `string` | 當前使用的模型名稱 |
 
-**狀態碼**:
-- `200 OK`: 請求成功
+
+**範例**:
+```javascript
+const response = await fetch('http://localhost:8001/status');
+const data = await response.json();
+console.log('Available tools:', data.tools);
+console.log('Current model:', data.model);
+```
 
 ---
 
@@ -199,7 +220,7 @@ Host: localhost:8001
 Content-Type: application/json
 
 {
-  "message": "請幫我列出專案目錄結構",
+  "message": "\u8acb\u5e6b\u6211\u5217\u51fa\u5c08\u6848\u76ee\u9304\u7d50\u69cb",
   "session_id": "default"
 }
 ```
@@ -209,13 +230,14 @@ Content-Type: application/json
 | 參數 | 類型 | 必填 | 預設值 | 描述 |
 |------|------|------|--------|------|
 | `message` | `string` | ✅ | - | 用戶訊息內容 |
-| `session_id` | `string` | ❌ | `"default"` | 會話 ID，用於持久化對話歷史 |
-| `stream` | `boolean` | ❌ | `false` | 是否使用串流（此端點忽略此參數） |
+| `session_id` | `string` | ❌ | `default` | 會話 ID，用於持久化對話歷史 |
+| `stream` | `boolean` | ❌ | - | 是否使用串流（此端點忽略此參數） |
+
 
 **回應**:
 ```json
 {
-  "message": "好的，我幫您列出專案目錄結構...\n\n專案根目錄包含：\n- orchestrator/\n- system_a/\n- system_b/\n- frontend/\n- shared/\n- Config/",
+  "message": "\u597d\u7684\uff0c\u6211\u5e6b\u60a8\u5217\u51fa\u5c08\u6848\u76ee\u9304\u7d50\u69cb...\n\n\u5c08\u6848\u6839\u76ee\u9304\u5305\u542b\uff1a\n- orchestrator/\n- system_a/\n- system_b/\n- frontend/\n- shared/\n- Config/\n",
   "session_id": "default"
 }
 ```
@@ -228,13 +250,12 @@ Content-Type: application/json
 | `session_id` | `string` | 會話 ID（可能與請求不同，若請求未提供則自動生成） |
 
 **狀態碼**:
-- `200 OK`: 請求成功
-- `400 Bad Request`: 請求參數錯誤
-- `500 Internal Server Error`: 服務器內部錯誤
+- `200 請求成功`: 請求成功
+- `400 請求參數錯誤`: 請求參數錯誤
+- `500 服務器內部錯誤`: 服務器內部錯誤
 
 **範例**:
 ```javascript
-// JavaScript 範例
 const response = await fetch('http://localhost:8001/chat', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -263,15 +284,20 @@ Host: localhost:8001
 Content-Type: application/json
 
 {
-  "message": "請寫一個 Python 快速排序算法",
+  "message": "\u8acb\u5beb\u4e00\u500b Python \u5feb\u901f\u6392\u5e8f\u7b97\u6cd5",
   "session_id": "coding-session"
 }
 ```
 
-**請求參數**: 與 `/chat` 相同
+**請求參數**:
 
-**回應格式**: Server-Sent Events (SSE)
+| 參數 | 類型 | 必填 | 預設值 | 描述 |
+|------|------|------|--------|------|
+| `message` | `string` | ✅ | - | 用戶訊息內容 |
+| `session_id` | `string` | ❌ | - | 會話 ID |
 
+
+**回應**:
 ```
 data: 這是
 
@@ -284,21 +310,17 @@ data: 快速排序
 data: 算法...
 
 data: [DONE]
+
 ```
 
-**SSE 訊息格式**:
-- 正常訊息: `data: <chunk>\n\n`
-- 結束標記: `data: [DONE]\n\n`
-- 錯誤訊息: `data: [ERROR] <error_message>\n\n`
 
 **狀態碼**:
-- `200 OK`: 請求成功（開始串流）
-- `400 Bad Request`: 請求參數錯誤
-- `500 Internal Server Error`: 服務器內部錯誤
+- `200 請求成功（開始串流）`: 請求成功（開始串流）
+- `400 請求參數錯誤`: 請求參數錯誤
+- `500 服務器內部錯誤`: 服務器內部錯誤
 
 **範例**:
 ```javascript
-// JavaScript 範例（使用 EventSource 或 fetch）
 const response = await fetch('http://localhost:8001/chat/stream', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -334,11 +356,7 @@ while (true) {
 }
 ```
 
-```
-
 ---
-
-## 會話管理端點
 
 ### 5. 列出所有會話
 
@@ -352,25 +370,27 @@ GET /sessions HTTP/1.1
 Host: localhost:8001
 ```
 
+
+
 **回應**:
 ```json
 {
   "sessions": [
     {
-      "id": "default",
       "created_at": "2025-01-15T10:00:00",
-      "updated_at": "2025-01-15T10:30:00",
+      "id": "default",
       "message_count": 10,
+      "metadata": {},
       "tool_call_count": 2,
-      "metadata": {}
+      "updated_at": "2025-01-15T10:30:00"
     },
     {
-      "id": "coding-session",
       "created_at": "2025-01-15T09:00:00",
-      "updated_at": "2025-01-15T11:00:00",
+      "id": "coding-session",
       "message_count": 25,
+      "metadata": {},
       "tool_call_count": 5,
-      "metadata": {}
+      "updated_at": "2025-01-15T11:00:00"
     }
   ],
   "total": 2
@@ -381,17 +401,20 @@ Host: localhost:8001
 
 | 欄位 | 類型 | 描述 |
 |------|------|------|
-| `sessions` | `array` | 會話列表 |
-| `sessions[].id` | `string` | 會話 ID |
-| `sessions[].created_at` | `string` | 建立時間（ISO 8601） |
-| `sessions[].updated_at` | `string` | 最後更新時間（ISO 8601） |
-| `sessions[].message_count` | `integer` | 訊息數量 |
-| `sessions[].tool_call_count` | `integer` | 工具調用次數 |
-| `sessions[].metadata` | `object` | 會話元數據 |
+| `sessions` | `array[SessionInfo]` | 會話列表 |
 | `total` | `integer` | 總會話數 |
 
-**狀態碼**:
-- `200 OK`: 請求成功
+
+**範例**:
+```javascript
+const response = await fetch('http://localhost:8001/sessions');
+const data = await response.json();
+
+console.log('總會話數:', data.total);
+data.sessions.forEach(session => {
+  console.log(`- ${session.id}: ${session.message_count} 條訊息`);
+});
+```
 
 ---
 
@@ -403,9 +426,10 @@ Host: localhost:8001
 
 **請求**:
 ```http
-GET /sessions/default HTTP/1.1
+GET /sessions/{session_id} HTTP/1.1
 Host: localhost:8001
 ```
+
 
 **路徑參數**:
 
@@ -416,31 +440,31 @@ Host: localhost:8001
 **回應**:
 ```json
 {
-  "id": "default",
   "created_at": "2025-01-15T10:00:00",
-  "updated_at": "2025-01-15T10:30:00",
+  "id": "default",
   "messages": [
     {
+      "content": "\u4f60\u597d",
       "id": "msg123",
-      "role": "user",
-      "content": "你好",
       "name": null,
+      "role": "user",
+      "timestamp": "2025-01-15T10:00:00",
       "tool_call_id": null,
-      "tool_calls": null,
-      "timestamp": "2025-01-15T10:00:00"
+      "tool_calls": null
     },
     {
+      "content": "\u4f60\u597d\uff01\u6709\u4ec0\u9ebc\u6211\u53ef\u4ee5\u5e6b\u4f60\u7684\u55ce\uff1f",
       "id": "msg456",
-      "role": "assistant",
-      "content": "你好！有什麼我可以幫你的嗎？",
       "name": null,
+      "role": "assistant",
+      "timestamp": "2025-01-15T10:00:05",
       "tool_call_id": null,
-      "tool_calls": null,
-      "timestamp": "2025-01-15T10:00:05"
+      "tool_calls": null
     }
   ],
+  "metadata": {},
   "tool_calls": [],
-  "metadata": {}
+  "updated_at": "2025-01-15T10:30:00"
 }
 ```
 
@@ -451,17 +475,13 @@ Host: localhost:8001
 | `id` | `string` | 會話 ID |
 | `created_at` | `string` | 建立時間（ISO 8601） |
 | `updated_at` | `string` | 最後更新時間（ISO 8601） |
-| `messages` | `array` | 完整訊息列表 |
-| `messages[].id` | `string` | 訊息 ID |
-| `messages[].role` | `string` | 角色（`user`, `assistant`, `system`, `tool`） |
-| `messages[].content` | `string` | 訊息內容 |
-| `messages[].timestamp` | `string` | 訊息時間戳（ISO 8601） |
+| `messages` | `array[Message]` | 完整訊息列表 |
 | `tool_calls` | `array` | 工具調用記錄 |
 | `metadata` | `object` | 會話元數據 |
 
 **狀態碼**:
-- `200 OK`: 請求成功
-- `404 Not Found`: 會話不存在
+- `200 請求成功`: 請求成功
+- `404 會話不存在`: 會話不存在
 
 **範例**:
 ```javascript
@@ -487,9 +507,10 @@ session.messages.forEach(msg => {
 
 **請求**:
 ```http
-DELETE /sessions/default HTTP/1.1
+DELETE /sessions/{session_id} HTTP/1.1
 Host: localhost:8001
 ```
+
 
 **路徑參數**:
 
@@ -500,8 +521,8 @@ Host: localhost:8001
 **回應**:
 ```json
 {
-  "success": true,
-  "message": "Session 'default' deleted successfully"
+  "message": "Session \u0027default\u0027 deleted successfully",
+  "success": true
 }
 ```
 
@@ -513,8 +534,8 @@ Host: localhost:8001
 | `message` | `string` | 操作結果訊息 |
 
 **狀態碼**:
-- `200 OK`: 刪除成功
-- `404 Not Found`: 會話不存在
+- `200 刪除成功`: 刪除成功
+- `404 會話不存在`: 會話不存在
 
 **範例**:
 ```javascript
@@ -544,11 +565,11 @@ console.log(result.message); // Session 'old-session' deleted successfully
 
 | 狀態碼 | 描述 | 可能原因 |
 |--------|------|----------|
-| `400 Bad Request` | 請求參數錯誤 | 缺少必填欄位、格式錯誤 |
+| `400 Bad Request` | 請求參數錯誤 | 缺少必填欄位, 格式錯誤 |
 | `404 Not Found` | 找不到資源 | 錯誤的 API 路徑 |
-| `422 Unprocessable Entity` | 數據驗證失敗 | JSON 格式錯誤、欄位類型不符 |
-| `500 Internal Server Error` | 服務器內部錯誤 | Provider API 錯誤、系統異常 |
-| `503 Service Unavailable` | 服務不可用 | 系統維護中、過載 |
+| `422 Unprocessable Entity` | 數據驗證失敗 | JSON 格式錯誤, 欄位類型不符 |
+| `500 Internal Server Error` | 服務器內部錯誤 | Provider API 錯誤, 系統異常 |
+| `503 Service Unavailable` | 服務不可用 | 系統維護中, 過載 |
 
 ### 錯誤處理範例
 
@@ -578,18 +599,12 @@ try {
 
 ## JavaScript/TypeScript SDK
 
-以下提供完整的 JavaScript/TypeScript SDK 封裝：
+MartletMolt 後端 API 客戶端 SDK，提供完整的 TypeScript 類型定義和使用範例。
+
 
 ### SDK 檔案: `MartletMoltClient.ts`
 
 ```typescript
-/**
- * MartletMolt 後端 API 客戶端 SDK
- * 
- * @version 0.1.0
- * @author MartletMolt Team
- */
-
 // ============================================
 // 類型定義
 // ============================================
@@ -660,6 +675,8 @@ export interface DeleteSessionResponse {
 export interface ApiError {
   detail: string;
 }
+
+
 // ============================================
 // SDK 類別
 // ============================================
@@ -808,12 +825,6 @@ export class MartletMoltClient {
    * 
    * @private
    */
-
-  /**
-   * 發送 HTTP 請求
-   * 
-   * @private
-   */
   private async request(
     method: string,
     path: string,
@@ -855,101 +866,9 @@ export class MartletMoltClient {
   }
 }
 
-// ============================================
-// 使用範例
-// ============================================
-
-/**
- * 範例 1: 基本對話
- */
-async function exampleBasicChat() {
-  const client = new MartletMoltClient();
-  
-  const response = await client.chat('你好，請介紹一下你自己');
-  console.log('AI 回應:', response.message);
-  console.log('會話 ID:', response.session_id);
-}
-
-/**
- * 範例 2: 串流對話
- */
-async function exampleStreamChat() {
-  const client = new MartletMoltClient();
-  
-  console.log('AI: ');
-  await client.chatStream(
-    '寫一個 Python 快速排序算法',
-    'coding-session',
-    (chunk) => {
-      process.stdout.write(chunk); // 即時輸出
-    },
-    (error) => {
-      console.error('錯誤:', error);
-    }
-  );
-  console.log('\n');
-}
-
-/**
- * 範例 3: 持續對話（使用 session_id）
- */
-async function exampleContinuousChat() {
-  const client = new MartletMoltClient();
-  const sessionId = 'my-conversation-123';
-
-  // 第一次對話
-  const response1 = await client.chat('我叫小明', sessionId);
-  console.log('AI:', response1.message);
-
-  // 第二次對話（會記住上下文）
-  const response2 = await client.chat('我叫什麼名字？', sessionId);
-  console.log('AI:', response2.message); // 應該會回答「小明」
-}
-
-/**
- * 範例 4: 檢查系統狀態
- */
-async function exampleCheckStatus() {
-  const client = new MartletMoltClient();
-  
-  const health = await client.health();
-  console.log('服務狀態:', health.status);
-  console.log('系統:', health.system);
-
-  const status = await client.status();
-  console.log('可用的工具:', status.tools);
-  console.log('當前模型:', status.model);
-}
-
-/**
- * 範例 5: 會話管理
- */
-async function exampleSessionManagement() {
-  const client = new MartletMoltClient();
-
-  // 列出所有會話
-  const sessions = await client.listSessions();
-  console.log('總會話數:', sessions.total);
-  sessions.sessions.forEach(session => {
-    console.log(`- ${session.id}: ${session.message_count} 條訊息`);
-  });
-
-  // 取得特定會話詳情
-  const sessionDetail = await client.getSession('my-session');
-  console.log('會話 ID:', sessionDetail.id);
-  sessionDetail.messages.forEach(msg => {
-    console.log(`[${msg.role}] ${msg.content}`);
-  });
-
-  // 刪除會話
-  const result = await client.deleteSession('old-session');
-  console.log(result.message);
-}
 ```
 
 ---
-
-## 使用範例
 
 ## 使用範例
 
@@ -957,7 +876,6 @@ async function exampleSessionManagement() {
 
 ```python
 import requests
-import json
 
 # 初始化客戶端
 BASE_URL = "http://localhost:8001"
@@ -988,12 +906,11 @@ for event in client.events():
         break
     elif event.data.startswith("[ERROR]"):
         print(f"錯誤: {event.data[8:]}")
-        break
     else:
-        print(event.data, end="", flush=True)
+        print(event.data, end='', flush=True)
 ```
 
-### cURL 範例
+### Shell/cURL 範例
 
 ```bash
 # 健康檢查
@@ -1005,15 +922,14 @@ curl http://localhost:8001/status
 # 同步對話
 curl -X POST http://localhost:8001/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "你好", "session_id": "test"}'
+  -d '{"message": "你好"}'
 
 # 串流對話
 curl -X POST http://localhost:8001/chat/stream \
   -H "Content-Type: application/json" \
-  -d '{"message": "寫一首詩"}' \
-  --no-buffer
+  -d '{"message": "寫一首詩"}'
 
-# 列出所有會話
+# 列出會話
 curl http://localhost:8001/sessions
 
 # 取得會話詳情
@@ -1027,85 +943,62 @@ curl -X DELETE http://localhost:8001/sessions/old-session
 
 ## 常見問題
 
-### Q1: 如何持久化對話歷史？
+### Q: 如何保持對話上下文？
 
-**A**: 使用 `session_id` 參數。相同 `session_id` 的對話會被保存，AI 會記住上下文。
+**A**: 使用 `session_id` 參數即可。相同的 `session_id` 會共享對話歷史：
 
 ```javascript
 // 第一次對話
-await client.chat('我叫小明', 'user-123');
+await client.chat('我叫小明', 'my-session');
 
-// 第二次對話（AI 會記住你的名字）
-await client.chat('我叫什麼？', 'user-123');
+// 第二次對話（會記住之前說過的名字）
+await client.chat('我叫什麼名字？', 'my-session');
 ```
 
-### Q2: 串流和同步模式如何選擇？
+### Q: 串流對話如何處理錯誤？
 
-**A**: 
-- **同步模式 (`/chat`)**: 適合短訊息、需要完整回應的場景
-- **串流模式 (`/chat/stream`)**: 適合長篇回應、即時顯示的場景
-
-### Q3: 如何處理 CORS 錯誤？
-
-**A**: 後端已啟用 CORS，允許跨域請求。若仍有問題，請檢查：
-1. Base URL 是否正確
-2. 是否有代理服務器限制
-
-### Q4: 請求超時怎麼辦？
-
-**A**: 可以在 SDK 中設置更長的超時時間：
+**A**: 監聽 `[ERROR]` 標記：
 
 ```javascript
-const client = new MartletMoltClient('http://localhost:8001', 60000); // 60秒
+await client.chatStream(
+  '問題',
+  'session-id',
+  (chunk) => console.log(chunk),
+  (error) => console.error('錯誤:', error)
+);
 ```
 
-### Q5: 如何獲取可用的工具列表？
-
-**A**: 調用 `/status` 端點：
-
-```javascript
-const status = await client.status();
-console.log('可用工具:', status.tools);
-```
-
-### Q6: 支援哪些 AI Provider？
+### Q: 支援哪些 AI Provider？
 
 **A**: 目前支援：
-- OpenAI (GPT-4, GPT-3.5)
-- Anthropic (Claude)
-- Ollama (本地模型)
+- **OpenAI** (GPT-4o, GPT-3.5 Turbo 等)
+- **Anthropic** (Claude 系列)
+- **Ollama** (本地模型)
 
-可在 `Config/settings.yaml` 中配置。
+### Q: 如何設定超時時間？
 
----
+**A**: 在 SDK 初始化時設定：
 
-## 更新日誌
+```javascript
+const client = new MartletMoltClient('http://localhost:8001', 60000); // 60 秒超時
+```
 
-### v0.1.0 (2025-01-15)
-- ✨ 初始版本
-- ✅ 基礎 API 端點（健康檢查、狀態、對話）
-- ✅ 串流對話支援
-- ✅ 會話管理
-- ✅ JavaScript/TypeScript SDK
+### Q: 會話資料儲存在哪裡？
 
----
-
-## 相關連結
-
-- [專案文檔](./AI_CONTEXT.md)
-- [前端開發指南](../frontend/README.md)
-- [配置說明](./config_templates/README.md)
-- [GitHub](https://github.com/NateYeh/MartletMolt)
+**A**: 預設使用本地檔案系統儲存，未來將支援：
+- Redis
+- PostgreSQL
+- SQLite
 
 ---
 
-## 支援與反饋
+## 更多資源
 
-如有問題或建議，請：
-1. 查看專案 [Issues](https://github.com/NateYeh/MartletMolt/issues)
-2. 提交新的 Issue
-3. 聯繫開發團隊
+- [GitHub Repository](https://github.com/your-org/martletmolt)
+- [Issue Tracker](https://github.com/your-org/martletmolt/issues)
+- [Contributing Guide](../CONTRIBUTING.md)
 
 ---
 
-**📚 完整 API 文件**: 可訪問 `http://localhost:8001/docs` 查看 FastAPI 自動生成的交互式 API 文件（Swagger UI）。
+**最後更新**: 2025-01-15  
+**文件版本**: v0.1.0
