@@ -19,10 +19,17 @@
 當有新想法或功能需求時，請執行以下步驟：
 
 ### Step 2.1: 建立詳細規格書
-在 `docs/task/` 下建立 `.md` 檔案，命名規範為：`TASK-XXX_簡短描述.md`（以任務編號開頭）。
+在 `docs/task/` 下建立 `.md` 檔案，命名規範為：`TASK-[PREFIX]-[ID]_簡短描述.md`。
+
+**常用前綴 (Prefixes):**
+- `ORC`: Orchestrator (守護程序/A-B 切換)
+- `CORE`: Backend Core (核心邏輯/LLM 介接)
+- `WEB`: Frontend UI (用戶介面/Jinja2)
+- `TOOL`: Agent Tools (工具箱/API 插件)
+- `SYS`: Infrastructure (環境配置/同步腳本)
+
 檔案內容應包含：
-- **任務編號**: `TASK-XXX` (接續現有編號)
-- **優先級**: 高 / 中 / 低
+- **任務編號**: `TASK-[PREFIX]-[ID]` (如 TASK-ORC-01)
 - **目標**: 解決什麼問題？
 - **詳細規格**: 技術實作路徑、API 定義、UI 變更、修改路徑清單。
 - **驗證方式**: 如何確認任務成功？
