@@ -79,8 +79,7 @@ system_a/martlet_molt/
 │   ├── base.py            # 抽象基類
 │   ├── web_*.py           # 網頁自動化工具
 │   ├── shell.py           # Shell 命令
-│   ├── file_*.py          # 檔案操作
-│   └── mysql.py           # 資料庫操作
+│   └── file_*.py          # 檔案操作
 ├── gateway/                # API 伺服器
 │   ├── server.py          # FastAPI 主程式
 │   ├── routes.py          # REST API
@@ -294,7 +293,7 @@ ui:
 
 gateway:
   host: "0.0.0.0"
-  port: 8000
+  port: 8001
 
 providers:
   openai:
@@ -429,14 +428,12 @@ ruff format .
 |------|------|
 | `file_read` | 讀取檔案 |
 | `file_write` | 寫入檔案 |
-| `file_replace` | 區塊替換 |
 
 ### 其他 Tool
 
 | Tool | 功能 |
 |------|------|
 | `shell` | 執行 Shell 命令 |
-| `mysql` | 執行 SQL |
 
 ### Tool Calling 流程
 
