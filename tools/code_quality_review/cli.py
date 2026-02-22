@@ -12,16 +12,16 @@ from pathlib import Path
 from reviewer import CodeQualityReviewer
 
 
-def generate_markdown_report(result) -> str:
-    """生成 Markdown 格式報告。
+def _format_overview_section(result) -> list[str]:
+    """格式化總覽區塊。
 
     Args:
         result: 審查結果。
 
     Returns:
-        Markdown 格式報告字串。
+        Markdown 行列表。
     """
-    lines = [
+    return [
         '# 程式碼品質審查報告',
         '',
         f'**審查時間**: {result.timestamp}',
@@ -42,71 +42,145 @@ def generate_markdown_report(result) -> str:
         '',
     ]
 
-    # 按問題類型統計
+
+def _format_issues_by_type_section(result) -> list[str]:
+    """格式化問題類型分佈區塊。
+
+    Args:
+        result: 審查結果。
+
+    Returns:
+        Markdown 行列表。
+    """
     issues_by_type = result.stats.get('issues_by_type', {})
-    if issues_by_type:
-        lines.extend([
-            '## 📈 問題類型分佈',
-            '',
-            '| 類型 | 數量 |',
-            '|------|------|',
-        ])
-        type_names = {
-            'complexity': '圈複雜度',
-            'maintainability': '可維護性',
-            'file_length': '檔案行數',
-            'function_length': '函數行數',
-        }
-        for issue_type, count in sorted(issues_by_type.items(), key=lambda x: -x[1]):
-            type_name = type_names.get(issue_type, issue_type)
-            lines.append(f'| {type_name} | {count} |')
-        lines.append('')
+    if not issues_by_type:
+        return []
 
-    # 問題詳情
-    if result.issues:
-        lines.extend([
-            '## 🔍 問題詳情',
-            '',
-        ])
+    type_names = {
+        'complexity': '圈複雜度',
+        'maintainability': '可維護性',
+        'file_length': '檔案行數',
+        'function_length': '函數行數',
+    }
 
-        # 高風險問題
-        high_issues = [i for i in result.issues if i.severity == 'high']
-        if high_issues:
-            lines.append('### 🔴 高風險問題')
-            lines.append('')
-            for issue in high_issues:
-                lines.append(f'#### `{issue.file_path}`')
-                lines.append('')
-                lines.append(f'- **問題**: {issue.name}')
-                if issue.line:
-                    lines.append(f'- **行號**: {issue.line}')
-                lines.append(f'- **數值**: {issue.value}')
-                lines.append(f'- **建議**: {issue.suggestion}')
-                lines.append('')
+    lines = [
+        '## 📈 問題類型分佈',
+        '',
+        '| 類型 | 數量 |',
+        '|------|------|',
+    ]
 
-        # 中風險問題
-        medium_issues = [i for i in result.issues if i.severity == 'medium']
-        if medium_issues:
-            lines.append('### 🟡 中風險問題')
-            lines.append('')
-            for issue in medium_issues:
-                lines.append(f'#### `{issue.file_path}`')
-                lines.append('')
-                lines.append(f'- **問題**: {issue.name}')
-                if issue.line:
-                    lines.append(f'- **行號**: {issue.line}')
-                lines.append(f'- **數值**: {issue.value}')
-                lines.append(f'- **建議**: {issue.suggestion}')
-                lines.append('')
+    for issue_type, count in sorted(issues_by_type.items(), key=lambda x: -x[1]):
+        type_name = type_names.get(issue_type, issue_type)
+        lines.append(f'| {type_name} | {count} |')
 
-    else:
-        lines.extend([
-            '## ✅ 審查結果',
-            '',
-            '沒有發現問題，程式碼品質良好！',
-            '',
-        ])
+    lines.append('')
+    return lines
 
+
+def _format_single_issue(issue) -> list[str]:
+    """格式化單一問題項目。
+
+    Args:
+        issue: 問題物件。
+
+    Returns:
+        Markdown 行列表。
+    """
+    lines = [
+        f'#### `{issue.file_path}`',
+        '',
+        f'- **問題**: {issue.name}',
+    ]
+    if issue.line:
+        lines.append(f'- **行號**: {issue.line}')
+    lines.extend([
+        f'- **數值**: {issue.value}',
+        f'- **建議**: {issue.suggestion}',
+        '',
+    ])
+    return lines
+
+
+def _format_issues_by_severity(issues: list, severity_label: str, severity_emoji: str) -> list[str]:
+    """格式化特定嚴重度的問題區塊。
+
+    Args:
+        issues: 問題列表。
+        severity_label: 嚴重度標籤（如「高風險」）。
+        severity_emoji: 嚴重度 emoji。
+
+    Returns:
+        Markdown 行列表。
+    """
+    if not issues:
+        return []
+
+    lines = [
+        f'### {severity_emoji} {severity_label}問題',
+        '',
+    ]
+
+    for issue in issues:
+        lines.extend(_format_single_issue(issue))
+
+    return lines
+
+
+def _format_issues_section(result) -> list[str]:
+    """格式化問題詳情區塊。
+
+    Args:
+        result: 審查結果。
+
+    Returns:
+        Markdown 行列表。
+    """
+    if not result.issues:
+        return _format_no_issues_section()
+
+    lines = [
+        '## 🔍 問題詳情',
+        '',
+    ]
+
+    # 高風險問題
+    high_issues = [i for i in result.issues if i.severity == 'high']
+    lines.extend(_format_issues_by_severity(high_issues, '高風險', '🔴'))
+
+    # 中風險問題
+    medium_issues = [i for i in result.issues if i.severity == 'medium']
+    lines.extend(_format_issues_by_severity(medium_issues, '中風險', '🟡'))
+
+    return lines
+
+
+def _format_no_issues_section() -> list[str]:
+    """格式化無問題區塊。
+
+    Returns:
+        Markdown 行列表。
+    """
+    return [
+        '## ✅ 審查結果',
+        '',
+        '沒有發現問題，程式碼品質良好！',
+        '',
+    ]
+
+
+def generate_markdown_report(result) -> str:
+    """生成 Markdown 格式報告。
+
+    Args:
+        result: 審查結果。
+
+    Returns:
+        Markdown 格式報告字串。
+    """
+    lines = _format_overview_section(result)
+    lines.extend(_format_issues_by_type_section(result))
+    lines.extend(_format_issues_section(result))
     return '\n'.join(lines)
 
 
