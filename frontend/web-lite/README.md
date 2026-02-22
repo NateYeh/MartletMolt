@@ -64,9 +64,9 @@ python main.py
 
 | 變數 | 預設值 | 說明 |
 |------|--------|------|
-| `BACKEND_HOST` | `127.0.0.1` | 後端 API 主機 |
+| `BACKEND_HOST` | `0.0.0.0` | 後端 API 主機 |
 | `BACKEND_PORT` | `8001` | 後端 API 端口 |
-| `FRONTEND_HOST` | `127.0.0.1` | 前端服務主機 |
+| `FRONTEND_HOST` | `0.0.0.0` | 前端服務主機 |
 | `FRONTEND_PORT` | `8002` | 前端服務端口 |
 | `WEB_LITE_DEBUG` | `false` | 除錯模式 |
 
@@ -103,7 +103,7 @@ web-lite/
 | `/api/chat` | POST | 代理到後端的聊天 API |
 | `/api/status` | GET | 代理到後端的狀態 API |
 
-**注意**：前端頁面直接使用 JavaScript 呼叫後端 API（`http://127.0.0.1:8001/chat`），代理端點為可選功能。
+**注意**：前端頁面直接使用 JavaScript 呼叫後端 API（`http://0.0.0.0:8001/chat`），代理端點為可選功能。
 
 ## 開發
 

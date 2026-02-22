@@ -14,7 +14,7 @@ from pydantic_settings import BaseSettings
 class GatewayConfig(BaseModel):
     """Gateway 配置"""
 
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     port: int = 8001
     debug: bool = False
     reload: bool = False

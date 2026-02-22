@@ -77,9 +77,9 @@ python main.py
 
 ### 訪問地址
 
-- **前端 UI**: http://127.0.0.1:8002
-- **後端 API**: http://127.0.0.1:8001
-- **健康檢查**: http://127.0.0.1:8002/health
+- **前端 UI**: http://0.0.0.0:8002
+- **後端 API**: http://0.0.0.0:8001
+- **健康檢查**: http://0.0.0.0:8002/health
 
 ## 🎯 核心功能
 
@@ -128,9 +128,9 @@ python main.py
 ### 環境變數
 
 ```bash
-BACKEND_HOST=127.0.0.1      # 後端 API 主機
+BACKEND_HOST=0.0.0.0      # 後端 API 主機
 BACKEND_PORT=8001           # 後端 API 端口
-FRONTEND_HOST=127.0.0.1     # 前端服務主機
+FRONTEND_HOST=0.0.0.0     # 前端服務主機
 FRONTEND_PORT=8002          # 前端服務端口
 ```
 

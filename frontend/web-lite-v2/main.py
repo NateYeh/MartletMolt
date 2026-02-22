@@ -17,7 +17,7 @@ TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
 # 後端 API 配置
-BACKEND_HOST = "127.0.0.1"
+BACKEND_HOST = "0.0.0.0"
 BACKEND_PORT = 8001
 BACKEND_URL = f"http://{BACKEND_HOST}:{BACKEND_PORT}"
 
@@ -71,13 +71,13 @@ async def health():
 
 def main():
     """啟動服務"""
-    logger.info(f"[Web Lite V2] 啟動前端服務...")
+    logger.info("[Web Lite V2] 啟動前端服務...")
     logger.info(f"[Web Lite V2] 後端 API: {BACKEND_URL}")
-    logger.info(f"[Web Lite V2] 前端地址: http://127.0.0.1:8002")
-    
+    logger.info("[Web Lite V2] 前端地址: http://0.0.0.0:8002")
+
     uvicorn.run(
         app,
-        host="127.0.0.1",
+        host="0.0.0.0",
         port=8002,
         log_level="info"
     )

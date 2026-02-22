@@ -189,20 +189,20 @@ python main.py
 
 ### 訪問地址
 
-- **前端 UI**: http://127.0.0.1:8002
-- **後端 API**: http://127.0.0.1:8001
-- **健康檢查**: http://127.0.0.1:8002/health
+- **前端 UI**: http://0.0.0.0:8002
+- **後端 API**: http://0.0.0.0:8001
+- **健康檢查**: http://0.0.0.0:8002/health
 
 ### 測試結果
 
 ```bash
-$ curl http://127.0.0.1:8002/health
-{"status":"ok","service":"web-lite-v2","backend_url":"http://127.0.0.1:8001"}
+$ curl http://0.0.0.0:8002/health
+{"status":"ok","service":"web-lite-v2","backend_url":"http://0.0.0.0:8001"}
 
-$ curl http://127.0.0.1:8002/ | grep "<title>"
+$ curl http://0.0.0.0:8002/ | grep "<title>"
 <title>首頁 - MartletMolt</title>
 
-$ curl http://127.0.0.1:8002/chat | grep "<title>"
+$ curl http://0.0.0.0:8002/chat | grep "<title>"
 <title>聊天 - MartletMolt</title>
 ```
 

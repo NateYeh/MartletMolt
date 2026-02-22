@@ -44,8 +44,8 @@ ci: lint
 # 開發模式：同時啟動後端 API 和前端服務
 dev:
 	@echo "🚀 Starting MartletMolt Development Environment..."
-	@echo "Backend API: http://127.0.0.1:8001"
-	@echo "Frontend:    http://127.0.0.1:8002"
+	@echo "Backend API: http://0.0.0.0:8001"
+	@echo "Frontend:    http://0.0.0.0:8002"
 	@echo ""
 	@echo "Press Ctrl+C to stop all services"
 	@echo ""
@@ -57,12 +57,12 @@ dev:
 # 只啟動後端 API（Port 8001）
 dev-backend:
 	@echo "🚀 Starting Backend API Server..."
-	@echo "Backend API: http://127.0.0.1:8001"
+	@echo "Backend API: http://0.0.0.0:8001"
 	python -m martlet_molt.main
 
 # 只啟動前端服務（Port 8002）
 dev-frontend:
 	@echo "🚀 Starting Frontend Server..."
-	@echo "Frontend: http://127.0.0.1:8002"
-	@echo "Ensure Backend API is running at http://127.0.0.1:8001"
+	@echo "Frontend: http://0.0.0.0:8002"
+	@echo "Ensure Backend API is running at http://0.0.0.0:8001"
 	cd frontend/web-lite && python main.py

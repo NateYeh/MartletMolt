@@ -12,7 +12,7 @@ from pydantic_settings import BaseSettings
 class BackendConfig(BaseModel):
     """後端 API 配置"""
 
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     port: int = 8001
 
     @property
@@ -29,7 +29,7 @@ class BackendConfig(BaseModel):
 class FrontendConfig(BaseModel):
     """前端服務配置"""
 
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     port: int = 8002
     debug: bool = False
     reload: bool = False
@@ -71,14 +71,14 @@ class Settings(BaseSettings):
         # 從環境變數覆蓋後端配置
         if os.environ.get("BACKEND_HOST"):
             self.backend = BackendConfig(
-                host=os.environ.get("BACKEND_HOST", "127.0.0.1"),
+                host=os.environ.get("BACKEND_HOST", "0.0.0.0"),
                 port=int(os.environ.get("BACKEND_PORT", "8001")),
             )
 
         # 從環境變數覆蓋前端配置
         if os.environ.get("FRONTEND_PORT"):
             self.frontend = FrontendConfig(
-                host=os.environ.get("FRONTEND_HOST", "127.0.0.1"),
+                host=os.environ.get("FRONTEND_HOST", "0.0.0.0"),
                 port=int(os.environ.get("FRONTEND_PORT", "8002")),
             )
 

@@ -36,7 +36,7 @@ class SystemConfig(BaseModel):
 
     name: str
     port: int
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     path: Path
 
     @property
