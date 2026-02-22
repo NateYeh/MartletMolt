@@ -12,6 +12,9 @@
 - [快速開始](#快速開始)
 - [API 端點總覽](#api-端點總覽)
 - [詳細 API 文件](#詳細-api-文件)
+  - [系統端點](#系統端點)
+  - [對話端點](#對話端點)
+  - [會話管理端點](#會話管理端點)
 - [錯誤處理](#錯誤處理)
 - [JavaScript/TypeScript SDK](#javascripttypescript-sdk)
 - [使用範例](#使用範例)
@@ -77,12 +80,29 @@ curl -X POST http://localhost:8001/chat \
 
 ## API 端點總覽
 
+### 系統端點
+
+| 方法 | 路徑 | 描述 |
+|------|------|------|
+| `GET` | `/health` | 健康檢查 |
+| `GET` | `/status` | 系統狀態 |
+
+### 對話端點
+
 | 方法 | 路徑 | 描述 | 是否串流 |
 |------|------|------|----------|
-| `GET` | `/health` | 健康檢查 | ❌ |
-| `GET` | `/status` | 系統狀態 | ❌ |
 | `POST` | `/chat` | 同步對話 | ❌ |
 | `POST` | `/chat/stream` | 串流對話 | ✅ |
+
+### 會話管理端點
+
+| 方法 | 路徑 | 描述 |
+|------|------|------|
+| `GET` | `/sessions` | 列出所有會話 |
+| `GET` | `/sessions/{session_id}` | 取得會話詳情 |
+| `DELETE` | `/sessions/{session_id}` | 刪除會話 |
+
+---
 
 ---
 
@@ -314,6 +334,198 @@ while (true) {
 }
 ```
 
+```
+
+---
+
+## 會話管理端點
+
+### 5. 列出所有會話
+
+**端點**: `GET /sessions`
+
+**描述**: 取得所有會話的基本資訊列表
+
+**請求**:
+```http
+GET /sessions HTTP/1.1
+Host: localhost:8001
+```
+
+**回應**:
+```json
+{
+  "sessions": [
+    {
+      "id": "default",
+      "created_at": "2025-01-15T10:00:00",
+      "updated_at": "2025-01-15T10:30:00",
+      "message_count": 10,
+      "tool_call_count": 2,
+      "metadata": {}
+    },
+    {
+      "id": "coding-session",
+      "created_at": "2025-01-15T09:00:00",
+      "updated_at": "2025-01-15T11:00:00",
+      "message_count": 25,
+      "tool_call_count": 5,
+      "metadata": {}
+    }
+  ],
+  "total": 2
+}
+```
+
+**回應欄位**:
+
+| 欄位 | 類型 | 描述 |
+|------|------|------|
+| `sessions` | `array` | 會話列表 |
+| `sessions[].id` | `string` | 會話 ID |
+| `sessions[].created_at` | `string` | 建立時間（ISO 8601） |
+| `sessions[].updated_at` | `string` | 最後更新時間（ISO 8601） |
+| `sessions[].message_count` | `integer` | 訊息數量 |
+| `sessions[].tool_call_count` | `integer` | 工具調用次數 |
+| `sessions[].metadata` | `object` | 會話元數據 |
+| `total` | `integer` | 總會話數 |
+
+**狀態碼**:
+- `200 OK`: 請求成功
+
+---
+
+### 6. 取得會話詳情
+
+**端點**: `GET /sessions/{session_id}`
+
+**描述**: 取得指定會話的詳細資訊，包含完整的訊息歷史
+
+**請求**:
+```http
+GET /sessions/default HTTP/1.1
+Host: localhost:8001
+```
+
+**路徑參數**:
+
+| 參數 | 類型 | 描述 |
+|------|------|------|
+| `session_id` | `string` | 會話 ID |
+
+**回應**:
+```json
+{
+  "id": "default",
+  "created_at": "2025-01-15T10:00:00",
+  "updated_at": "2025-01-15T10:30:00",
+  "messages": [
+    {
+      "id": "msg123",
+      "role": "user",
+      "content": "你好",
+      "name": null,
+      "tool_call_id": null,
+      "tool_calls": null,
+      "timestamp": "2025-01-15T10:00:00"
+    },
+    {
+      "id": "msg456",
+      "role": "assistant",
+      "content": "你好！有什麼我可以幫你的嗎？",
+      "name": null,
+      "tool_call_id": null,
+      "tool_calls": null,
+      "timestamp": "2025-01-15T10:00:05"
+    }
+  ],
+  "tool_calls": [],
+  "metadata": {}
+}
+```
+
+**回應欄位**:
+
+| 欄位 | 類型 | 描述 |
+|------|------|------|
+| `id` | `string` | 會話 ID |
+| `created_at` | `string` | 建立時間（ISO 8601） |
+| `updated_at` | `string` | 最後更新時間（ISO 8601） |
+| `messages` | `array` | 完整訊息列表 |
+| `messages[].id` | `string` | 訊息 ID |
+| `messages[].role` | `string` | 角色（`user`, `assistant`, `system`, `tool`） |
+| `messages[].content` | `string` | 訊息內容 |
+| `messages[].timestamp` | `string` | 訊息時間戳（ISO 8601） |
+| `tool_calls` | `array` | 工具調用記錄 |
+| `metadata` | `object` | 會話元數據 |
+
+**狀態碼**:
+- `200 OK`: 請求成功
+- `404 Not Found`: 會話不存在
+
+**範例**:
+```javascript
+const response = await fetch('http://localhost:8001/sessions/default');
+const session = await response.json();
+
+console.log('會話 ID:', session.id);
+console.log('訊息數量:', session.messages.length);
+
+// 遍歷所有訊息
+session.messages.forEach(msg => {
+  console.log(`[${msg.role}] ${msg.content}`);
+});
+```
+
+---
+
+### 7. 刪除會話
+
+**端點**: `DELETE /sessions/{session_id}`
+
+**描述**: 刪除指定的會話及其所有歷史記錄
+
+**請求**:
+```http
+DELETE /sessions/default HTTP/1.1
+Host: localhost:8001
+```
+
+**路徑參數**:
+
+| 參數 | 類型 | 描述 |
+|------|------|------|
+| `session_id` | `string` | 會話 ID |
+
+**回應**:
+```json
+{
+  "success": true,
+  "message": "Session 'default' deleted successfully"
+}
+```
+
+**回應欄位**:
+
+| 欄位 | 類型 | 描述 |
+|------|------|------|
+| `success` | `boolean` | 是否成功刪除 |
+| `message` | `string` | 操作結果訊息 |
+
+**狀態碼**:
+- `200 OK`: 刪除成功
+- `404 Not Found`: 會話不存在
+
+**範例**:
+```javascript
+const response = await fetch('http://localhost:8001/sessions/old-session', {
+  method: 'DELETE'
+});
+
+const result = await response.json();
+console.log(result.message); // Session 'old-session' deleted successfully
+```
+
 ---
 
 ## 錯誤處理
@@ -407,10 +619,47 @@ export interface ChatResponse {
   session_id: string;
 }
 
+export interface SessionInfo {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+  tool_call_count: number;
+  metadata: Record<string, any>;
+}
+
+export interface SessionListResponse {
+  sessions: SessionInfo[];
+  total: number;
+}
+
+export interface Message {
+  id: string;
+  role: string;
+  content: string;
+  name?: string | null;
+  tool_call_id?: string | null;
+  tool_calls?: any[] | null;
+  timestamp: string;
+}
+
+export interface SessionDetailResponse {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  messages: Message[];
+  tool_calls: any[];
+  metadata: Record<string, any>;
+}
+
+export interface DeleteSessionResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface ApiError {
   detail: string;
 }
-
 // ============================================
 // SDK 類別
 // ============================================
@@ -523,6 +772,44 @@ export class MartletMoltClient {
   }
 
   /**
+   * 列出所有會話
+   * 
+   * @returns 會話列表
+   */
+  async listSessions(): Promise<SessionListResponse> {
+    const response = await this.request('GET', '/sessions');
+    return response.json();
+  }
+
+  /**
+   * 取得會話詳情
+   * 
+   * @param sessionId - 會話 ID
+   * @returns 會話詳細資訊
+   */
+  async getSession(sessionId: string): Promise<SessionDetailResponse> {
+    const response = await this.request('GET', `/sessions/${sessionId}`);
+    return response.json();
+  }
+
+  /**
+   * 刪除會話
+   * 
+   * @param sessionId - 會話 ID
+   * @returns 刪除結果
+   */
+  async deleteSession(sessionId: string): Promise<DeleteSessionResponse> {
+    const response = await this.request('DELETE', `/sessions/${sessionId}`);
+    return response.json();
+  }
+
+  /**
+   * 發送 HTTP 請求
+   * 
+   * @private
+   */
+
+  /**
    * 發送 HTTP 請求
    * 
    * @private
@@ -633,9 +920,36 @@ async function exampleCheckStatus() {
   console.log('可用的工具:', status.tools);
   console.log('當前模型:', status.model);
 }
+
+/**
+ * 範例 5: 會話管理
+ */
+async function exampleSessionManagement() {
+  const client = new MartletMoltClient();
+
+  // 列出所有會話
+  const sessions = await client.listSessions();
+  console.log('總會話數:', sessions.total);
+  sessions.sessions.forEach(session => {
+    console.log(`- ${session.id}: ${session.message_count} 條訊息`);
+  });
+
+  // 取得特定會話詳情
+  const sessionDetail = await client.getSession('my-session');
+  console.log('會話 ID:', sessionDetail.id);
+  sessionDetail.messages.forEach(msg => {
+    console.log(`[${msg.role}] ${msg.content}`);
+  });
+
+  // 刪除會話
+  const result = await client.deleteSession('old-session');
+  console.log(result.message);
+}
 ```
 
 ---
+
+## 使用範例
 
 ## 使用範例
 
@@ -698,6 +1012,15 @@ curl -X POST http://localhost:8001/chat/stream \
   -H "Content-Type: application/json" \
   -d '{"message": "寫一首詩"}' \
   --no-buffer
+
+# 列出所有會話
+curl http://localhost:8001/sessions
+
+# 取得會話詳情
+curl http://localhost:8001/sessions/default
+
+# 刪除會話
+curl -X DELETE http://localhost:8001/sessions/old-session
 ```
 
 ---

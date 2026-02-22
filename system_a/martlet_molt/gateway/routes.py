@@ -154,3 +154,122 @@ async def chat_stream(request: ChatRequest):
         generate(),
         media_type="text/event-stream",
     )
+
+
+# ============================================
+# 會話管理 API
+# ============================================
+
+
+class SessionInfo(BaseModel):
+    """會話基本資訊"""
+
+    id: str
+    created_at: str
+    updated_at: str
+    message_count: int
+    tool_call_count: int
+    metadata: dict
+
+
+class SessionListResponse(BaseModel):
+    """會話列表回應"""
+
+    sessions: list[SessionInfo]
+    total: int
+
+
+class SessionDetailResponse(BaseModel):
+    """會話詳情回應"""
+
+    id: str
+    created_at: str
+    updated_at: str
+    messages: list[dict]
+    tool_calls: list[dict]
+    metadata: dict
+
+
+class DeleteSessionResponse(BaseModel):
+    """刪除會話回應"""
+
+    success: bool
+    message: str
+
+
+@router.get("/sessions", response_model=SessionListResponse)
+async def list_sessions():
+    """
+    列出所有會話
+
+    Returns:
+        所有會話的基本資訊列表
+    """
+    session_ids = session_manager.list_sessions()
+    sessions = []
+
+    for session_id in session_ids:
+        info = session_manager.get_session_info(session_id)
+        if info:
+            sessions.append(SessionInfo(**info))
+
+    return SessionListResponse(
+        sessions=sessions,
+        total=len(sessions),
+    )
+
+
+@router.get("/sessions/{session_id}", response_model=SessionDetailResponse)
+async def get_session(session_id: str):
+    """
+    取得會話詳情（包含完整訊息歷史）
+
+    Args:
+        session_id: 會話 ID
+
+    Returns:
+        會話完整資訊，包含所有訊息歷史
+
+    Raises:
+        HTTPException: 會話不存在時返回 404
+    """
+    session = session_manager.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+
+    return SessionDetailResponse(
+        id=session.id,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        messages=[msg.model_dump() for msg in session.messages],
+        tool_calls=[tc.model_dump() for tc in session.tool_calls],
+        metadata=session.metadata,
+    )
+
+
+@router.delete("/sessions/{session_id}", response_model=DeleteSessionResponse)
+async def delete_session(session_id: str):
+    """
+    刪除會話
+
+    Args:
+        session_id: 會話 ID
+
+    Returns:
+        刪除結果
+
+    Raises:
+        HTTPException: 會話不存在時返回 404
+    """
+    # 先檢查會話是否存在
+    session = session_manager.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+
+    # 刪除會話
+    success = session_manager.delete(session_id)
+
+    return DeleteSessionResponse(
+        success=success,
+        message=f"Session '{session_id}' deleted successfully" if success else "Failed to delete session",
+    )

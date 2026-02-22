@@ -176,6 +176,51 @@ class SessionManager:
             sessions.append(file.stem)
         return sorted(sessions)
 
+    def delete(self, session_id: str) -> bool:
+        """
+        刪除會話
+
+        Args:
+            session_id: 會話 ID
+
+        Returns:
+            是否成功刪除
+        """
+        # 從記憶體中移除
+        if session_id in self._sessions:
+            del self._sessions[session_id]
+
+        # 刪除檔案
+        file_path = self.sessions_dir / f"{session_id}.jsonl"
+        if file_path.exists():
+            file_path.unlink()
+            return True
+
+        return False
+
+    def get_session_info(self, session_id: str) -> dict | None:
+        """
+        取得會話基本資訊（不包含完整訊息）
+
+        Args:
+            session_id: 會話 ID
+
+        Returns:
+            會話資訊字典，若不存在則返回 None
+        """
+        session = self.get(session_id)
+        if not session:
+            return None
+
+        return {
+            "id": session.id,
+            "created_at": session.created_at,
+            "updated_at": session.updated_at,
+            "message_count": len(session.messages),
+            "tool_call_count": len(session.tool_calls),
+            "metadata": session.metadata,
+        }
+
 
 # 全域會話管理器
 session_manager = SessionManager()
