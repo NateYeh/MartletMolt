@@ -1,4 +1,4 @@
-# AI_CONTEXT.md — MartletMolt 專案地圖
+# PROJECT_MAP.md — MartletMolt 專案地圖
 
 > 目的：提供專案高階架構與路徑引導，讓 AI 快速定位修改目標而不消耗過多 Token。
 
