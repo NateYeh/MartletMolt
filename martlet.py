@@ -51,7 +51,7 @@ def main() -> None:
 
     # 將對應的系統目錄加入 sys.path
     project_root = Path(__file__).parent
-    system_path = project_root / f"system_{active_system}"
+    system_path = project_root / "backend" / f"system_{active_system}"
     if str(system_path) not in sys.path:
         sys.path.insert(0, str(system_path))
 

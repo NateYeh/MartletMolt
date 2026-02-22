@@ -63,12 +63,12 @@ class OrchestratorSettings(BaseSettings):
     system_a: SystemConfig = SystemConfig(
         name="a",
         port=8001,
-        path=Path("system_a/martlet_molt"),
+        path=Path("backend/system_a/martlet_molt"),
     )
     system_b: SystemConfig = SystemConfig(
         name="b",
         port=8002,
-        path=Path("system_b/martlet_molt"),
+        path=Path("backend/system_b/martlet_molt"),
     )
 
     # 狀態檔案路徑

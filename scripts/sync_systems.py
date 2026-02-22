@@ -31,8 +31,8 @@ def sync_modules(source: str, target: str, modules: list[str] | None = None) -> 
     print(f"🔄 同步 system_{source} → system_{target}...")
 
     for module in modules:
-        src = base / f"system_{source}/martlet_molt/{module}"
-        dst = base / f"system_{target}/martlet_molt/{module}"
+        src = base / "backend" / f"system_{source}/martlet_molt/{module}"
+        dst = base / "backend" / f"system_{target}/martlet_molt/{module}"
 
         if not src.exists():
             print(f"  ⚠️  {module} 來源不存在，跳過")
@@ -47,7 +47,7 @@ def sync_modules(source: str, target: str, modules: list[str] | None = None) -> 
         # 複製目錄
         shutil.copytree(src, dst)
 
-    print(f"✅ 同步完成！system_{source} → system_{target}")
+    print(f"✅ 同步完成！backend/system_{source} → backend/system_{target}")
 
 
 def main() -> None:

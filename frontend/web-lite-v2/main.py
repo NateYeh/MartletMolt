@@ -4,11 +4,12 @@ Web Lite V2 - FastAPI 前端服務
 """
 
 from pathlib import Path
+
+import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
-import uvicorn
 from loguru import logger
 
 # 配置

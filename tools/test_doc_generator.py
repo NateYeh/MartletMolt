@@ -55,8 +55,8 @@ def test_generator():
     assert '# MartletMolt 後端 API SDK 文件' in markdown
     assert '## 詳細 API 文件' in markdown
     print(f"  文檔長度: {len(markdown)} 字元")
-    print(f"  包含標題: ✅")
-    print(f"  包含詳細文檔: ✅\n")
+    print("  包含標題: ✅")
+    print("  包含詳細文檔: ✅\n")
 
     # 測試 5: 檢查端點表格
     print("✅ 測試 5: 檢查端點表格")

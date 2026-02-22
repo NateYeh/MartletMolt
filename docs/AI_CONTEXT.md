@@ -46,8 +46,9 @@
 | 路徑 | 用途 |
 |------|------|
 | `orchestrator/` | 守護程序，管理 A/B 生命週期（**不可被 AI 修改**） |
-| `system_a/` | A 系統（純 API 後端，Agent/Tools/Providers） |
-| `system_b/` | B 系統（純 API 後端，Agent/Tools/Providers） |
+| `backend/` | 後端專案目錄 |
+| `backend/system_a/` | A 系統（純 API 後端，Agent/Tools/Providers） |
+| `backend/system_b/` | B 系統（純 API 後端，Agent/Tools/Providers） |
 | `frontend/` | **前端專案目錄（多 UI 專案）** |
 | `frontend/web-lite-v2/` | 輕量化版 LobeHub UI（推薦，獨立 FastAPI，Port 8002） |
 | `frontend/web-lite/` | 舊版前端服務（已棄用） |
@@ -65,33 +66,36 @@
 ## System A/B 內部結構（純後端）
 
 ```
-system_a/martlet_molt/
-├── core/                   # 核心模組
-│   ├── agent.py           # AI Agent 核心
-│   ├── session.py         # 會話管理
-│   └── config.py          # 配置管理
-├── providers/              # AI Provider 抽象層
-│   ├── base.py            # 抽象基類
-│   ├── openai.py          # OpenAI
-│   ├── anthropic.py       # Anthropic
-│   └── ollama.py          # Ollama
-├── tools/                  # 工具系統
-│   ├── base.py            # 抽象基類
-│   ├── web_*.py           # 網頁自動化工具
-│   ├── shell.py           # Shell 命令
-│   └── file_*.py          # 檔案操作
-├── gateway/                # API 伺服器
-│   ├── server.py          # FastAPI 主程式
-│   ├── routes.py          # REST API
-│   └── websocket.py       # WebSocket
-├── channels/               # 通訊通道（統一介面）
-│   ├── base.py            # 抽象基類
-│   ├── cli/               # CLI Channel
-│   │   └── channel.py     # 命令行互動
-│   └── web/               # Web Channel
-│       └── channel.py     # WebSocket 通訊
-├── cli.py                 # CLI 入口
-└── main.py                # 服務入口
+backend/
+├── __init__.py
+├── system_a/martlet_molt/
+│   ├── core/                   # 核心模組
+│   │   ├── agent.py           # AI Agent 核心
+│   │   ├── session.py         # 會話管理
+│   │   └── config.py          # 配置管理
+│   ├── providers/              # AI Provider 抽象層
+│   │   ├── base.py            # 抽象基類
+│   │   ├── openai.py          # OpenAI
+│   │   ├── anthropic.py       # Anthropic
+│   │   └── ollama.py          # Ollama
+│   ├── tools/                  # 工具系統
+│   │   ├── base.py            # 抽象基類
+│   │   ├── web_*.py           # 網頁自動化工具
+│   │   ├── shell.py           # Shell 命令
+│   │   └── file_*.py          # 檔案操作
+│   ├── gateway/                # API 伺服器
+│   │   ├── server.py          # FastAPI 主程式
+│   │   ├── routes.py          # REST API
+│   │   └── websocket.py       # WebSocket
+│   ├── channels/               # 通訊通道（統一介面）
+│   │   ├── base.py            # 抽象基類
+│   │   ├── cli/               # CLI Channel
+│   │   │   └── channel.py     # 命令行互動
+│   │   └── web/               # Web Channel
+│   │       └── channel.py     # WebSocket 通訊
+│   ├── cli.py                 # CLI 入口
+│   └── main.py                # 服務入口
+└── system_b/martlet_molt/      # 與 system_a 結構相同
 
 # 前端專案（獨立於後端，多 UI 專案）
 frontend/
@@ -534,9 +538,9 @@ Message(role="assistant", content="docs 資料夾包含 AI_CONTEXT.md 和 skills
 |---------|---------|
 | Orchestrator 錯誤 | `orchestrator/` |
 | A/B 切換問題 | `orchestrator/switcher.py` |
-| Gateway 啟動失敗 | `system_a/martlet_molt/gateway/` |
-| Tool 執行問題 | `system_a/martlet_molt/tools/` |
-| Provider 調用失敗 | `system_a/martlet_molt/providers/` |
+| Gateway 啟動失敗 | `backend/system_a/martlet_molt/gateway/` |
+| Tool 執行問題 | `backend/system_a/martlet_molt/tools/` |
+| Provider 調用失敗 | `backend/system_a/martlet_molt/providers/` |
 | 配置問題 | `Config/settings.yaml` |
 
 ---
