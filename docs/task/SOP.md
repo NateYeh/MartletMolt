@@ -70,7 +70,7 @@
 
 - **任務目錄**: `docs/task/`
 - **主要文件**: `TASK_LIST.md` (入口)
-- **輔助計畫**: `docs/XXX_plan.md` (長期規劃)
+- **輔助計畫**: `docs/plan/XXX_plan.md` (長期規劃)
 
 ---
 

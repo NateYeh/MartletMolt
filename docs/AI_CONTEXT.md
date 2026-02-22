@@ -506,7 +506,7 @@ Message(
 )
 
 # AI 最終回應
-Message(role="assistant", content="docs 資料夾包含 AI_CONTEXT.md 和 skills_plan.md...")
+Message(role="assistant", content="docs 資料夾包含 AI_CONTEXT.md 和 plan/skills_plan.md...")
 ```
 
 ---

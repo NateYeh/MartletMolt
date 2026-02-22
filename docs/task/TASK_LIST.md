@@ -30,18 +30,25 @@
 *已規劃完成，待當前衝刺結束後啟動。*
 
 ### 🛠️ 核心功能增強
-- **TASK-001: Anthropic Provider 實作** ❌
+- **TASK-001: Anthropic Provider 實作** 📄
     - 任務：實作 Claude 模型的對話與串流介接。
-- **TASK-002: Tool 參數嚴格驗證** ❌
+    - 文件：[`TASK-001_Anthropic_Provider_Implementation.md`](./TASK-001_Anthropic_Provider_Implementation.md)
+- **TASK-002: Tool 參數嚴格驗證** 📄
     - 任務：引入 JSON Schema 驗證工具調用參數。
+    - 文件：[`TASK-002_Tool_Parameter_Validation.md`](./TASK-002_Tool_Parameter_Validation.md)
 - **TASK-008: Skills 學習系統** 📄
     - 任務：動態技能學習與儲存機制。
-    - 文件：[`../skills_plan.md`](../skills_plan.md)
-
+    - 文件：[`TASK-008_Skills_Learning_System.md`](./TASK-008_Skills_Learning_System.md)
+- **TASK-012: 會話重命名功能支援** 📄
+    - 任務：實作 API 與管理器邏輯以修改會話標題。
+    - 文件：[`TASK-012_Session_Renaming.md`](./TASK-012_Session_Renaming.md)
+- **TASK-013: 文件上傳 API 與儲存** 📄
+    - 任務：實作檔案接收、驗證與本地儲存系統。
+    - 文件：[`TASK-013_File_Upload_System.md`](./TASK-013_File_Upload_System.md)
 ### 🎨 Web 介面演進
 - **TASK-WEB-ADV: Web Lite V2 進階功能** 📄
     - 任務：會話管理、歷史記錄持久化、文件上傳。
-    - 文件：[`TASK_web_lite_v2_advanced_features.md`](./TASK_web_lite_v2_advanced_features.md)
+    - 文件：[`TASK-WEB-ADV_Web_Lite_V2_Advanced_Features.md`](./TASK-WEB-ADV_Web_Lite_V2_Advanced_Features.md)
 
 ---
 
