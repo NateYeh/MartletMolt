@@ -1,6 +1,6 @@
 # MartletMolt 任務總覽
 
-> **最後更新**：2025-02-22
+> **最後更新**：2026-02-22
 
 ---
 
@@ -8,13 +8,35 @@
 
 | 類別 | 高優先級 | 中優先級 | 低優先級 | 總計 |
 |------|---------|---------|---------|------|
-| 後端 | 2 | 2 | 1 | 5 |
+| 後端 | 2 | 1 | 1 | 4 |
 | Web UI | 1 | 2 | 2 | 5 |
-| **總計** | **3** | **4** | **3** | **10** |
+| 通訊通道 | 1 | 0 | 0 | 1 |
+| **總計** | **4** | **3** | **3** | **10** |
 
 ---
 
 ## 🔴 高優先級任務
+
+### TASK-011: Web UI 遷移至 WebSocket (WebChannel)
+
+| 項目 | 內容 |
+|------|------|
+| **位置** | `frontend/web-lite-v2/` & `backend/system_b/martlet_molt/gateway/` |
+| **說明** | 將前後端通訊從 SSE 遷移至基於 Commit `b9af744` 的 WebSocket `WebChannel` |
+| **影響** | 統一通訊架構，支援更複雜的雙向互動 |
+| **預估工時** | 3-5 小時 |
+| **狀態** | ⏳ 進行中 |
+
+**待實作：**
+- [x] 後端 CORS 與連通性修復 (Commit: 766b5b3)
+- [x] 前端動態 URL 解析與預檢 (Commit: 766b5b3)
+- [ ] 後端實作 WebSocket 路由並調用 `WebChannel`
+- [ ] 前端從 `fetch` 遷移至 `WebSocket` 客戶端
+- [ ] 介接 `ChannelMessage` / `ChannelResponse` 模型
+
+**詳細規格：** [TASK_web_connectivity_and_channel_sync.md](./TASK_web_connectivity_and_channel_sync.md)
+
+---
 
 ### TASK-001: Anthropic Provider 實作
 
@@ -49,26 +71,6 @@
 
 ---
 
-### TASK-003: Web UI 串流響應 (SSE)
-
-| 項目 | 內容 |
-|------|------|
-| **位置** | `frontend/web-lite-v2/` |
-| **說明** | 實現 SSE 即時響應，打字機效果顯示 AI 回應 |
-| **影響** | 大幅提升使用者體驗 |
-| **預估工時** | 6-8 小時 |
-| **狀態** | ✅ 已完成 |
-
-**待實作：**
-- 後端 SSE 端點 (`/chat/stream`)
-- 前端 EventSource 處理
-- 打字機動畫效果
-- 支援中斷生成
-
-**詳細規格：** [TASK_streaming_buffer.md](./TASK_streaming_buffer.md)
-
----
-
 ## 🟡 中優先級任務
 
 ### TASK-004: Web UI 會話管理
@@ -91,7 +93,7 @@
 
 ### TASK-005: Web UI 對話歷史管理
 
-| 項目 | 兠容 |
+| 項目 | 內容 |
 |------|------|
 | **位置** | `frontend/web-lite-v2/` |
 | **說明** | 顯示、刪除、匯出對話歷史 |
@@ -103,24 +105,6 @@
 - 刪除特定訊息
 - 匯出對話 (Markdown/JSON)
 - 與後端 Session API 整合
-
----
-
-### TASK-006: Channel 重構
-
-| 項目 | 內容 |
-|------|------|
-| **位置** | `system_a/martlet_molt/channels/` |
-| **說明** | 用新的 Channel 抽象重構現有 CLI/Web 入口 |
-| **預估工時** | 4-6 小時 |
-| **狀態** | ❌ 未開始 |
-
-**待重構：**
-- `cli.py` → 使用 `CLIChannel`
-- `routes.py` → 使用 `WebChannel`
-- 統一使用 Channel 介面
-
-**相關：** `channels/base.py` 已實作完成
 
 ---
 
@@ -154,11 +138,6 @@
 | **狀態** | 📄 已規劃 |
 
 **詳細規格：** [skills_plan.md](../skills_plan.md)
-
-**實作階段：**
-- Phase 1：基礎架構 (BaseSkill, SkillManager, SkillTool)
-- Phase 2：安全與驗證 (沙箱執行)
-- Phase 3：進階功能 (依賴管理、版本控制)
 
 ---
 
@@ -200,11 +179,13 @@
 
 | 任務 | 完成日期 | 說明 |
 |------|---------|------|
-| BaseChannel 抽象類 | 2025-02-22 | Channels 模組化架構 |
-| CLIChannel 實作 | 2025-02-22 | 命令行互動通道 |
-| WebChannel 實作 | 2025-02-22 | WebSocket 通訊通道 |
-| System A/B 同步工具 | 2025-02-22 | `make sync-a-to-b` / `make sync-b-to-a` |
-| 串流緩衝架構 | 2025-02-22 | 後端獨立串流處理 |
+| BaseChannel 抽象類 | 2026-02-22 | Channels 模組化架構 |
+| CLIChannel 實作 | 2026-02-22 | 命令行互動通道 |
+| WebChannel 實作 | 2026-02-22 | WebSocket 通訊通道 |
+| Web UI 連通性修復 | 2026-02-22 | CORS, Pre-check, Dynamic URL |
+| Web UI 串流響應 (SSE) | 2026-02-22 | 實現打字機效果顯示 AI 回應 |
+| System A/B 同步工具 | 2026-02-22 | `make sync-a-to-b` / `make sync-b-to-a` |
+| 串流緩衝架構 | 2026-02-22 | 後端獨立串流處理 |
 
 ---
 
@@ -228,60 +209,6 @@
 docs/task/TASK_XXX_任務名稱.md
 ```
 
-**任務檔案模板：**
-
-```markdown
-# 任務：任務名稱
-
-> **狀態**：❌ 未開始
-> 
-> **預估工時**：X 小時
-
-## 一、任務概述
-
-### 問題描述
-（描述當前問題或需求）
-
-### 改進目標
-（描述預期成果）
-
-## 二、實作計畫
-
-### 步驟 1
-- [ ] 待辦事項 1
-- [ ] 待辦事項 2
-
-### 步驟 2
-...
-
-## 三、相關檔案
-
-- `path/to/file1.py`
-- `path/to/file2.py`
-
-## 四、測試計畫
-
-- [ ] 測試項目 1
-- [ ] 測試項目 2
-```
-
 ---
 
-## 🚀 建議執行順序
-
-```
-1. TASK-003: Web UI 串流響應     ← 使用者體驗提升最大
-2. TASK-001: Anthropic Provider  ← 功能缺口
-3. TASK-002: Tool 參數驗證       ← 提升健壯性
-4. TASK-004: Web UI 會話管理     ← 基本功能完善
-5. TASK-006: Channel 重構        ← 架構優化
-6. TASK-005: 對話歷史管理        ← 功能完善
-7. TASK-007: 單元測試補充        ← 持續進行
-8. TASK-008: Skills 系統         ← 大型功能
-9. TASK-009: 文件上傳            ← 進階功能
-10. TASK-010: Agent 設定介面     ← 個人化設定
-```
-
----
-
-*此文件由 AI 自動生成並維護*
+*此文件由 MartletMolt AI 自動生成並維護*
