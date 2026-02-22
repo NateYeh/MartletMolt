@@ -81,6 +81,9 @@ playwright/.local-browsers/
 # Ruff cache
 .ruff_cache/
 
+# Code quality review reports (auto-generated)
+tools/code_quality_review/reports/
+
 # OS
 .DS_Store
 Thumbs.db
