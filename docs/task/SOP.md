@@ -71,6 +71,13 @@
 若變更涉及 A/B 系統同步，請執行：
 - `make sync-a-to-b` 或 `make sync-b-to-a`
 
+### Step 4.4: Git 提交與發布 (必須執行)
+為確保進化成果被永久儲存並可追溯：
+1.  **Staging**: `git add .`
+2.  **Commit**: 撰寫語義化 Commit Message (如 `feat: ...`, `fix: ...`)。
+3.  **Push**: `git push origin main` (或當前分支)。
+    *   *AI 助手務必在任務關閉前確認此步驟已完成。*
+
 ---
 
 ## 5. 檔案命名與路徑規範
