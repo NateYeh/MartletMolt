@@ -273,6 +273,10 @@ class Agent:
 
             logger.info(f"Stream completed: session={self.session.id}, response_len={len(full_response)}")
 
+            # 自動生成標題 (如果還沒有標題)
+            if not self.session.metadata.get("title"):
+                asyncio.create_task(self._generate_session_title(user_input))
+
             return full_response
 
         except asyncio.CancelledError:
@@ -285,6 +289,15 @@ class Agent:
             buffer.fail(str(e))
             raise
 
+    async def _generate_session_title(self, first_user_input: str) -> None:
+        """自動生成會話標題"""
+        try:
+            # 簡單處理：取前 20 個字
+            title = first_user_input[:20].strip() + ("..." if len(first_user_input) > 20 else "")
+            session_manager.rename_session(self.session.id, title)
+            logger.info(f"Auto-generated title for {self.session.id}: {title}")
+        except Exception as e:
+            logger.error(f"Failed to generate title: {e}")
     async def run_tools(self, tool_calls: list[dict]) -> list[dict]:
         """
         執行工具調用（獨立使用）

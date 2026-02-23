@@ -11,14 +11,31 @@
     </div>
     
     <!-- 新建對話按鈕 -->
-    <div class="p-3 border-b border-gray-200 dark:border-slate-700">
-        <button onclick="window.location.href='/chat'" 
+    <div class="p-3 border-b border-gray-200 dark:border-slate-700" x-data="newChatBtn()">
+        <button @click="createNewChat()" 
                 class="w-full flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all duration-200 shadow-sm hover:shadow-md active:scale-95">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
             新對話
         </button>
+        <script>
+            function newChatBtn() {
+                return {
+                    createNewChat() {
+                        const now = new Date();
+                        const timestamp = now.getFullYear().toString().slice(-2) + 
+                                        (now.getMonth() + 1).toString().padStart(2, '0') + 
+                                        now.getDate().toString().padStart(2, '0') + '_' + 
+                                        now.getHours().toString().padStart(2, '0') + 
+                                        now.getMinutes().toString().padStart(2, '0');
+                        const randomStr = Math.random().toString(36).substring(2, 6);
+                        const sessionId = `chat_${timestamp}_${randomStr}`;
+                        window.location.href = `/chat?session=${sessionId}`;
+                    }
+                }
+            }
+        </script>
     </div>
     
     <!-- 導航菜單 -->
