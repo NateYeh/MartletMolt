@@ -41,11 +41,17 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     """首頁"""
+    # 如果是遠端存取，自動將 127.0.0.1 換成請求的 Host IP
+    current_backend = BACKEND_URL
+    if "127.0.0.1" in BACKEND_URL or "localhost" in BACKEND_URL:
+        host = request.url.hostname
+        current_backend = f"http://{host}:{BACKEND_PORT}"
+
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
-            "backend_url": BACKEND_URL
+            "backend_url": current_backend
         }
     )
 
@@ -53,11 +59,16 @@ async def index(request: Request):
 @app.get("/chat", response_class=HTMLResponse)
 async def chat(request: Request):
     """聊天頁面"""
+    current_backend = BACKEND_URL
+    if "127.0.0.1" in BACKEND_URL or "localhost" in BACKEND_URL:
+        host = request.url.hostname
+        current_backend = f"http://{host}:{BACKEND_PORT}"
+
     return templates.TemplateResponse(
         "chat.html",
         {
             "request": request,
-            "backend_url": BACKEND_URL
+            "backend_url": current_backend
         }
     )
 
