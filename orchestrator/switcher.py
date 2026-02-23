@@ -8,6 +8,7 @@ from orchestrator.config import settings
 from orchestrator.health_check import health_checker
 from orchestrator.manager import process_manager
 from orchestrator.state import state_manager
+from orchestrator.sync import Syncer
 
 
 class Switcher:
@@ -109,59 +110,6 @@ class Switcher:
 
         logger.info(f"Evolution successful: now running system {modified_system}")
         return True
-
-
-class Syncer:
-    """程式碼同步器"""
-
-    def sync(self, source: str, target: str) -> bool:
-        """
-        同步程式碼從 source 到 target
-
-        Args:
-            source: 源系統 ('a' 或 'b')
-            target: 目標系統 ('a' 或 'b')
-
-        Returns:
-            是否同步成功
-        """
-        import shutil
-        from pathlib import Path
-
-        source_path = getattr(settings, f"system_{source}").path
-        target_path = getattr(settings, f"system_{target}").path
-
-        logger.info(f"Syncing system {source} to system {target}")
-
-        try:
-            for pattern in settings.sync.exclude_patterns:
-                # 清理目標系統的排除檔案
-                for file in Path(target_path).rglob(pattern):
-                    if file.is_dir():
-                        shutil.rmtree(file)
-                    else:
-                        file.unlink()
-
-            # 複製檔案
-            for item in Path(source_path).iterdir():
-                if item.name in settings.sync.exclude_patterns:
-                    continue
-
-                target_item = Path(target_path) / item.name
-
-                if item.is_dir():
-                    if target_item.exists():
-                        shutil.rmtree(target_item)
-                    shutil.copytree(item, target_item)
-                else:
-                    shutil.copy2(item, target_item)
-
-            logger.info(f"Sync completed: {source} -> {target}")
-            return True
-
-        except Exception as e:
-            logger.exception(f"Sync failed: {e}")
-            return False
 
 
 # 全域切換器

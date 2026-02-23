@@ -2,7 +2,7 @@
 
 - **任務編號**: TASK-ORC-02
 - **優先級**: 中
-- **狀態**: Pending 📄
+- **狀態**: ✅ 已完成 (2025-02-23)
 - **建立日期**: 2025-02-23
 
 ## 🎯 目標
@@ -17,6 +17,7 @@
     - 增加「模擬執行 (Dry Run)」模式。
 
 ## ✅ 驗證方式
-- [ ] 執行 `orchestrator sync` 後，目標目錄的 `.git` 或 `.env` 依然存在。
-- [ ] 程式碼修改能正確從 System A 同步至 System B。
-- [ ] 通過 `ruff` 與 `pyright` 檢查。
+- [x] 執行增量同步後，目標目錄的 `.git` 或 `.env` 依然存在（已通過單元測試驗證）。
+- [x] 程式碼修改能正確從 System A 增量同步至 System B。
+- [x] 已將 `Syncer` 解耦至 `orchestrator/sync.py`。
+- [x] 通過 `ruff` 與 `pyright` 檢查。
