@@ -1,0 +1,26 @@
+# 基礎 Web 框架與工具
+fastapi
+uvicorn
+loguru
+httpx
+requests
+PyYAML
+python-dotenv
+jinja2
+python-multipart
+rich
+typer
+
+# Pydantic (資料驗證)
+pydantic
+pydantic-settings
+
+# 資料庫相關
+sqlalchemy
+aiosqlite
+aiofiles
+
+# AI 與 自動化工具
+openai
+anthropic
+playwright

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # --- 交通警察 (Orchestrator) ---
+  orchestrator:
+    image: python:3.11-slim
+    container_name: martlet-orchestrator
+    working_dir: /app
+    volumes:
+      - /volume1/public/work/py_works/external_projects/MartletMolt/orchestrator:/app
+      - /var/run/docker.sock:/var/run/docker.sock # 負責重啟 A/B
+    ports:
+      - "8000:8000"
+    command: sh -c "pip install fastapi uvicorn docker && python orchestrator_server.py"
+    networks:
+      - martlet-net
+
+  # --- 活性/進化系統 A ---
+  system_a:
+    image: python:3.11-slim
+    container_name: martlet-system-a
+    working_dir: /app
+    volumes:
+      - /volume1/public/work/py_works/external_projects/MartletMolt/backend/system_a:/app              # 自己
+      - /volume1/public/work/py_works/external_projects/MartletMolt/backend/system_b:/mnt/evolution/b # 對象(B)
+      - /volume1/public/work/py_works/external_projects/MartletMolt/shared:/app/shared                # 共享數據
+      - /volume1/public/work/py_works/external_projects/MartletMolt/Config:/app/Config                # 共享配置
+      - /volume1/public/work/py_works/external_projects/MartletMolt/skills:/app/skills                # 共享技能包
+    environment:
+      - SYSTEM_ID=A
+      - ORCHESTRATOR_URL=http://orchestrator:8000
+    ports:
+      - "8001:8001"
+    command: sh -c "pip install -r requirements.txt && python -m martlet_molt.main"
+    networks:
+      - martlet-net
+
+  # --- 活性/進化系統 B ---
+  system_b:
+    image: python:3.11-slim
+    container_name: martlet-system-b
+    working_dir: /app
+    volumes:
+      - /volume1/public/work/py_works/external_projects/MartletMolt/backend/system_b:/app              # 自己
+      - /volume1/public/work/py_works/external_projects/MartletMolt/backend/system_a:/mnt/evolution/a # 對象(A)
+      - /volume1/public/work/py_works/external_projects/MartletMolt/shared:/app/shared
+      - /volume1/public/work/py_works/external_projects/MartletMolt/Config:/app/Config
+      - /volume1/public/work/py_works/external_projects/MartletMolt/skills:/app/skills
+    environment:
+      - SYSTEM_ID=B
+      - ORCHESTRATOR_URL=http://orchestrator:8000
+    ports:
+      - "8002:8001" 
+    command: sh -c "pip install -r requirements.txt && python -m martlet_molt.main"
+    networks:
+      - martlet-net
+
+networks:
+  martlet-net:
+    driver: bridge
