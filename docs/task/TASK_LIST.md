@@ -31,8 +31,8 @@
 - **計畫書**: [`docs/plan/dual_container_architecture.md`](../plan/dual_container_architecture.md)
 - **啟動條件**: 
     1. TASK-CORE-007 (核心測試) 覆蓋率 > 80%。 (✅ 已達成)
-    2. TASK-001 (多供應商) 完成實作。
-- **狀態**: 📅 規劃中 (Pending Multi-Provider)
+    2. 基礎設施支持 A/B 同步穩定。 (✅ 已達成)
+- **狀態**: 🚀 準備中 (Ready to Start)
 
 ---
 
