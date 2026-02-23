@@ -1,124 +1,77 @@
 # Web Lite
 
-MartletMolt 的輕量級前端服務（獨立運行）。
+MartletMolt 的輕量化版 LobeHub UI。這是一個**輕量化、現代化、AI 友善**的前端實作，旨在保持 LobeHub 的設計美感，同時將複雜度降至最低。
 
-## 架構
+## 🎨 設計理念
+
+**輕量化 + 現代化 UI**
+
+- **視覺一致性**: 保留 LobeHub 的現代化介面與色彩系統。
+- **卓越性能**: 採用服務端渲染（SSR），大幅縮短首次加載時間。
+- **零構建依賴**: 零 JavaScript 打包工具，全部使用 CDN 載入。
+- **AI 友善性**: 純 HTML/Tailwind Structure，讓 AI Agent 能輕鬆修改與進化介面。
+
+## 🏗️ 技術架構
+
+### 技術棧
+| 技術 | 角色 | 載入方式 |
+|------|------|----------|
+| **FastAPI** | 後端服務框架 | Python (pip) |
+| **Jinja2** | 服務端模板渲染 | Python (pip) |
+| **Tailwind CSS** | 樣式框架 | CDN |
+| **Alpine.js** | 輕量響應式框架 | CDN |
+| **Marked.js** | Markdown 解析 | CDN |
+| **Highlight.js** | 代碼高亮 | CDN |
+
+## 📁 目錄結構
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Web Lite Frontend (Port 8002)                              │
-│  ├── /              ← 首頁 HTML                             │
-│  ├── /chat          ← 聊天頁面 HTML                         │
-│  └── /static/*      ← 靜態資源                              │
-│         │                                                    │
-│         └──→ HTTP 呼叫後端 API                              │
-│                                                              │
-└─────────────────────────────────────────────────────────────┘
-                         │
-                         │ HTTP
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Backend API (Port 8001)                                    │
-│  ├── /health        ← 健康檢查                              │
-│  ├── /status        ← 系統狀態                              │
-│  ├── /chat          ← 聊天 API                              │
-│  └── /chat/stream   ← 串流 API                              │
-└─────────────────────────────────────────────────────────────┘
+web-lite/
+├── main.py           # FastAPI 入口
+├── templates/
+│   ├── base.html             # 基礎模板（LobeHub 風格）
+│   ├── index.html            # 首頁
+│   ├── chat.html             # 聊天頁面
+│   └── components/
+│       └── sidebar.html      # 側邊欄組件
+├── static/
+│   ├── css/
+│   │   └── app.css           # 自定義樣式
+│   └── js/
+│       └── app.js            # Alpine.js 應用邏輯
+└── README.md
 ```
 
-## 技術棧
+## 🚀 快速啟動
 
-- **FastAPI** - 前端服務框架
-- **Jinja2** - 服務端模板渲染
-- **Tailwind CSS** (CDN) - 樣式框架
-- **HTMX** (CDN) - 動態更新
-- **httpx** - HTTP 客戶端（呼叫後端 API）
-
-## 快速啟動
-
-### 方法 1：使用 Makefile（推薦）
-
+### 方法 1：使用 Makefile (推薦)
+在專案根目錄執行：
 ```bash
 # 同時啟動後端 + 前端
 make dev
 
 # 或分開啟動
-make dev-backend   # 只啟動後端 (Port 8001)
-make dev-frontend  # 只啟動前端 (Port 8002)
+make dev-backend   # 後端 API (Port 8001)
+make dev-frontend  # 前端服務 (Port 8002)
 ```
 
 ### 方法 2：手動啟動
-
 ```bash
-# 終端機 1：啟動後端
-python -m martlet_molt.main
-
-# 終端機 2：啟動前端
 cd frontend/web-lite
 python main.py
 ```
 
-## 配置
+- **前端 UI**: [http://localhost:8002](http://localhost:8002)
+- **健康檢查**: `http://localhost:8002/health`
 
-### 環境變數
+## 🎯 核心功能
 
-| 變數 | 預設值 | 說明 |
-|------|--------|------|
-| `BACKEND_HOST` | `0.0.0.0` | 後端 API 主機 |
-| `BACKEND_PORT` | `8001` | 後端 API 端口 |
-| `FRONTEND_HOST` | `0.0.0.0` | 前端服務主機 |
-| `FRONTEND_PORT` | `8002` | 前端服務端口 |
-| `WEB_LITE_DEBUG` | `false` | 除錯模式 |
+### ✅ 已實現
+- **LobeHub 風格 UI**: 漸變背景、圓角卡片、柔和陰影。
+- **主題切換**: 完善的暗色/亮色模式支援（LocalStorage 持久化）。
+- **Markdown & 高亮**: 支援完整的 Markdown 語法解析與代碼塊語法高亮。
+- **響應式導航**: 側邊欄縮放與移動端適配。
+- **即時對話**: 非同步 API 調用與動態消息載入動畫。
 
-### 範例
-
-```bash
-# 使用不同的後端地址
-BACKEND_HOST=192.168.1.100 BACKEND_PORT=8001 python main.py
-```
-
-## 目錄結構
-
-```
-web-lite/
-├── main.py           # FastAPI 入口
-├── config.py         # 配置管理
-├── routes.py         # 前端路由
-├── templates/
-│   ├── components/   # 可重用元件
-│   ├── chat.html     # 聊天頁面
-│   └── index.html    # 首頁
-├── static/
-│   ├── css/          # 本地 CSS
-│   └── js/           # 本地 JavaScript
-└── README.md
-```
-
-## API 端點
-
-| 端點 | 方法 | 說明 |
-|------|------|------|
-| `/` | GET | 首頁 |
-| `/chat` | GET | 聊天頁面 |
-| `/api/chat` | POST | 代理到後端的聊天 API |
-| `/api/status` | GET | 代理到後端的狀態 API |
-
-**注意**：前端頁面直接使用 JavaScript 呼叫後端 API（`http://0.0.0.0:8001/chat`），代理端點為可選功能。
-
-## 開發
-
-### 安裝依賴
-
-```bash
-pip install fastapi uvicorn jinja2 httpx pydantic-settings loguru
-```
-
-### 除錯模式
-
-```bash
-WEB_LITE_DEBUG=true python main.py
-```
-
-## 版本
-
-- **v0.1.0** - 初始版本，前後端分離架構
+---
+**MartletMolt** - Self-Evolving AI Agent System 🦅

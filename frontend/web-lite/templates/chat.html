@@ -1,122 +1,573 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat - MartletMolt</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
-    <style>
-        .chat-container { height: calc(100vh - 200px); }
-        .message-user { background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); }
-        .message-assistant { background: #374151; }
-        pre { background: #1f2937; border-radius: 0.5rem; padding: 1rem; overflow-x: auto; }
-        code { font-family: 'Fira Code', monospace; }
-    </style>
-</head>
-<body class="bg-gray-900 text-gray-100 min-h-screen">
-    <nav class="bg-gray-800 border-b border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <a href="/" class="flex items-center">
-                        <span class="text-2xl">🦅</span>
-                        <span class="ml-2 text-xl font-bold">MartletMolt</span>
-                    </a>
+{% extends "base.html" %}
+
+{% block title %}聊天 - MartletMolt{% endblock %}
+
+{% block content %}
+<!-- 頂部導航欄 -->
+<header class="h-16 border-b border-gray-200 dark:border-slate-700 flex items-center px-6 bg-white dark:bg-slate-900 flex-shrink-0">
+    <div class="flex items-center justify-between w-full">
+        <div class="flex items-center space-x-4">
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-gray-100" 
+                x-text="sessionMetadata.title || (messages.length > 0 ? '對話詳情' : '新對話')"></h1>
+            <span class="px-3 py-1 text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full"
+                  x-text="'ID: ' + sessionId">
+            </span>
+            <!-- WebSocket 連線狀態指示器 -->
+            <span x-data
+                  :class="$store.ws?.connected ? 'bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'"
+                  class="px-2 py-1 text-xs font-medium rounded-full transition-colors">
+                <span x-show="$store.ws?.connected" class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                    已連線
+                </span>
+                <span x-show="!$store.ws?.connected" class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                    未連線
+                </span>
+            </span>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+            <!-- 清空對話按鈕 -->
+            <button @click="clearMessages()" 
+                    x-show="messages.length > 0"
+                    class="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    title="清空對話">
+                <svg class="w-5 h-5 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- 聊天主區域 -->
+<div class="flex-1 flex flex-col overflow-hidden" x-data="chatApp()" x-init="init()">
+    <!-- 消息列表 -->
+    <div id="chat-messages" 
+         x-ref="messagesContainer"
+         class="flex-1 overflow-y-auto px-6 py-6 scroll-smooth">
+        
+        <!-- 空狀態 - 歡迎訊息 -->
+        <div x-show="messages.length === 0 && !isLoading" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform translate-y-4"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             class="h-full flex flex-col items-center justify-center max-w-3xl mx-auto w-full fade-in">
+            
+            <!-- Logo 動畫 -->
+            <div class="text-7xl mb-6 animate-bounce-slow">🦅</div>
+            
+            <!-- 標題 -->
+            <h2 class="text-3xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                歡迎使用 MartletMolt
+            </h2>
+            
+            <p class="text-gray-500 dark:text-slate-400 text-lg mb-8 text-center">
+                自我進化的 AI Agent 系統<br>
+                <span class="text-sm">開始對話，見證 AI 自我修改的力量</span>
+            </p>
+            
+            <!-- 快捷建議按鈕 -->
+            <div class="grid grid-cols-2 gap-3 w-full max-w-2xl">
+                <template x-for="(suggestion, index) in suggestions" :key="index">
+                    <button @click="sendSuggestion(suggestion.text)"
+                            class="group px-4 py-4 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg transition-all duration-200 text-left">
+                        <div class="text-2xl mb-2" x-text="suggestion.icon"></div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400" x-text="suggestion.text"></div>
+                    </button>
+                </template>
+            </div>
+        </div>
+        
+        <!-- 消息列表 -->
+        <div x-show="messages.length > 0" class="max-w-3xl mx-auto w-full space-y-6">
+            <template x-for="(message, index) in messages" :key="index">
+                <div class="flex flex-col gap-2">
+                    <!-- 系統訊息樣式 (全寬居中) -->
+                    <template x-if="message.role === 'system'">
+                        <div class="flex justify-center my-4">
+                            <div class="bg-gray-100 dark:bg-slate-800/50 rounded-lg px-4 py-2 border border-gray-200 dark:border-slate-700 max-w-[90%] text-center">
+                                <div class="flex items-center justify-center space-x-2 mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider text-gray-400 uppercase">System Prompt</span>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-slate-400 italic break-words line-clamp-3 hover:line-clamp-none transition-all cursor-help" 
+                                     x-text="message.content"></div>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- 標準對話樣式 (User/Assistant/Tool) -->
+                    <template x-if="message.role !== 'system'">
+                        <div class="flex gap-3 fade-in" 
+                             :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 transform translate-y-2"
+                             x-transition:enter-end="opacity-100 transform translate-y-0">
+                            
+                            <!-- Avatar (Assistant & Tool) -->
+                            <div x-show="message.role === 'assistant' || message.role === 'tool'" class="flex-shrink-0">
+                                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg shadow-sm"
+                                     :class="message.role === 'assistant' ? 'bg-gradient-to-br from-blue-500 to-purple-600' : 'bg-amber-500'">
+                                    <span x-text="message.role === 'assistant' ? '🦅' : '🛠️'"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- 消息內容 -->
+                            <div class="flex-1 max-w-[85%]" :class="message.role === 'user' ? 'order-1' : ''">
+                                <!-- 角色標籤 -->
+                                <div class="flex items-center mb-1" :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
+                                    <span class="text-xs font-medium text-gray-500 dark:text-slate-400" 
+                                          x-text="message.role === 'user' ? '你' : (message.role === 'assistant' ? 'MartletMolt' : '工具執行: ' + (message.name || 'Unknown'))"></span>
+                                    <template x-if="message.role === 'assistant'">
+                                        <span class="ml-2 px-2 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-bold">AI</span>
+                                    </template>
+                                    <template x-if="message.role === 'tool'">
+                                        <span class="ml-2 px-2 py-0.5 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full font-bold">RESULT</span>
+                                    </template>
+                                </div>
+                                
+                                <!-- Tool Calls (If any in assistant message) -->
+                                <template x-if="message.role === 'assistant' && message.tool_calls && message.tool_calls.length > 0">
+                                    <div class="mb-2 space-y-1">
+                                        <template x-for="call in message.tool_calls" :key="call.id">
+                                            <div class="text-[11px] bg-slate-100 dark:bg-slate-700/50 rounded px-2 py-1 text-slate-500 flex items-center border border-slate-200 dark:border-slate-600">
+                                                <span class="mr-2">⚡ 呼叫工具: <strong x-text="call.function?.name || call.name"></strong></span>
+                                                <span class="opacity-60 overflow-hidden text-ellipsis whitespace-nowrap" x-text="call.function?.arguments || JSON.stringify(call.arguments)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- 消息框 -->
+                                <div class="rounded-2xl px-4 py-3 shadow-sm"
+                                     :class="{
+                                        'bg-blue-600 text-white rounded-tr-sm': message.role === 'user',
+                                        'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-tl-sm': message.role === 'assistant',
+                                        'bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-tl-sm': message.role === 'tool'
+                                     }">
+                                    
+                                    <!-- 思考過程/Reasoning (如果有 content 且以 <thought> 開頭或包含思考邏輯) -->
+                                    <template x-if="message.role === 'assistant' && message.content && message.content.includes('<thought>')">
+                                        <div class="mb-3 border-l-2 border-slate-300 dark:border-slate-600 pl-3 py-1 text-sm text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30 rounded-r">
+                                            <details>
+                                                <summary class="cursor-pointer font-medium hover:text-blue-500 transition-colors">思考過程</summary>
+                                                <div class="mt-2 text-xs leading-relaxed" x-text="message.content.match(/<thought>([\s\S]*?)<\/thought>/)?.[1] || '解析中...'"></div>
+                                            </details>
+                                        </div>
+                                    </template>
+
+                                    <!-- 實際回覆內容 (移除 thought 標籤後顯示) -->
+                                    <div class="markdown-body"
+                                         :class="{
+                                            'text-white': message.role === 'user',
+                                            'text-gray-900 dark:text-gray-100': message.role !== 'user',
+                                            'text-xs font-mono opacity-80': message.role === 'tool'
+                                         }"
+                                         x-html="renderMarkdown(message.role === 'assistant' ? message.content.replace(/<thought>[\s\S]*?<\/thought>/, '') : message.content)">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- User Avatar -->
+                            <div x-show="message.role === 'user'" class="flex-shrink-0 order-2">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-lg shadow-sm">
+                                    👤
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-xs text-gray-400">Backend: <span class="text-green-400">{{ backend_url }}</span></span>
+            </template>
+            
+            <!-- 載入指示器 -->
+            <div x-show="isLoading" 
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 class="flex gap-3 fade-in">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0">
+                    🦅
+                </div>
+                <div class="flex-1 max-w-[85%]">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm px-4 py-3 border border-gray-200 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex items-center space-x-1">
+                                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
+                                <div class="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
+                            </div>
+                            <span class="text-sm text-gray-500 dark:text-slate-400">思考中...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
-
-    <main class="max-w-4xl mx-auto px-4 py-4">
-        <!-- Chat Messages -->
-        <div id="chat-messages" class="chat-container overflow-y-auto space-y-4 mb-4 p-4 bg-gray-800 rounded-lg">
-            <div class="text-center text-gray-500 py-8">
-                <div class="text-4xl mb-4">🦅</div>
-                <p>Start a conversation with MartletMolt</p>
-                <p class="text-sm mt-2">Type a message below to begin</p>
-            </div>
-        </div>
-
-        <!-- Input Area -->
-        <div class="bg-gray-800 rounded-lg p-4">
-            <form id="chat-form" class="flex space-x-4">
-                <input type="text" 
-                       id="message-input" 
-                       placeholder="Type your message..."
-                       class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
-                <button type="submit" 
-                        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition">
-                    Send
-                </button>
-            </form>
-        </div>
-    </main>
-
-    <script>
-        const chatMessages = document.getElementById('chat-messages');
-        const chatForm = document.getElementById('chat-form');
-        const messageInput = document.getElementById('message-input');
-        let sessionId = 'default';
-
-        // Add message to chat
-        function addMessage(role, content) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `p-4 rounded-lg ${role === 'user' ? 'message-user ml-8' : 'message-assistant mr-8'}`;
-            
-            const roleLabel = document.createElement('div');
-            roleLabel.className = 'text-xs text-gray-400 mb-1';
-            roleLabel.textContent = role === 'user' ? 'You' : 'Assistant';
-            messageDiv.appendChild(roleLabel);
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'whitespace-pre-wrap';
-            contentDiv.textContent = content;
-            messageDiv.appendChild(contentDiv);
-
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        // Handle form submit
-        chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const message = messageInput.value.trim();
-            if (!message) return;
-
-            // Add user message
-            addMessage('user', message);
-            messageInput.value = '';
-
-            // Send to Backend API (direct connection)
-            try {
-                const response = await fetch('{{ backend_url }}/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        message: message, 
-                        session_id: sessionId 
-                    })
-                });
-
-                const data = await response.json();
+    </div>
+    
+    <!-- 輸入區域 -->
+    <div class="border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 flex-shrink-0">
+        <form @submit.prevent="sendMessage()" class="max-w-3xl mx-auto">
+            <!-- 輸入框容器 -->
+            <div class="relative bg-white dark:bg-slate-800 rounded-2xl border border-gray-300 dark:border-slate-600 shadow-lg hover:shadow-xl transition-shadow duration-200 focus-within:border-blue-500 dark:focus-within:border-blue-500">
+                <!-- Textarea -->
+                <textarea x-model="inputMessage"
+                          @keydown.enter="if (!event.shiftKey) { event.preventDefault(); sendMessage(); }"
+                          @input="autoResize($event)"
+                          placeholder="輸入訊息... (Shift+Enter 換行)"
+                          rows="1"
+                          class="w-full bg-transparent px-4 py-4 pr-32 resize-none focus:outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-slate-500"
+                          :disabled="isLoading"
+                          style="max-height: 200px;">
+                </textarea>
                 
-                if (data.message) {
-                    addMessage('assistant', data.message);
-                } else if (data.detail) {
-                    addMessage('assistant', `Error: ${data.detail}`);
+                <!-- 工具列 -->
+                <div class="absolute bottom-3 right-3 flex items-center space-x-2">
+                    <!-- 附加功能按鈕 -->
+                    <input type="file" x-ref="fileInput" class="hidden" @change="uploadFile($event)">
+                    <button type="button" 
+                            @click="$refs.fileInput.click()"
+                            :disabled="isUploading"
+                            class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group relative"
+                            title="上傳文件">
+                        <svg class="w-5 h-5 text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                        </svg>
+                        <!-- 上傳中動畫 -->
+                        <span x-show="isUploading" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                            <svg class="animate-spin h-4 w-4 text-blue-600" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
+                    </button>
+                    
+                    <!-- 發送按鈕 -->
+                    <button type="submit"
+                            :disabled="!inputMessage.trim() || isLoading"
+                            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 active:scale-95">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        <span>發送</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 底部提示 -->
+            <p class="text-xs text-gray-400 dark:text-slate-500 text-center mt-3">
+                MartletMolt 可能會產生不準確的資訊，請驗證重要內容。
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Alpine.js WebSocket 狀態 Store -->
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.store('ws', {
+        connected: false,
+        setConnected(value) {
+            this.connected = value;
+        }
+    });
+});
+</script>
+
+<script>
+function chatApp() {
+    return {
+        messages: [],
+        inputMessage: '',
+        isLoading: false,
+        isUploading: false,
+        sessionId: 'default',
+        sessionMetadata: {},
+        backendUrl: '{{ backend_url }}',
+        websocket: null,
+        
+        suggestions: [
+            { icon: '🤖', text: '什麼是自我進化 AI？' },
+            { icon: '🏗️', text: '分析 MartletMolt 的架構' },
+            { icon: '🔧', text: '介紹工具系統的功能' },
+            { icon: '🚀', text: '如何觸發進化流程？' },
+        ],
+        
+        init() {
+            console.log('[ChatApp] 初始化完成');
+            this.loadSessionId();
+            this.adjustBackendUrl();
+            this.fetchHistory().then(() => {
+                this.connectWebSocket();
+            });
+        },
+
+        async fetchHistory() {
+            try {
+                const url = `${this.backendUrl}/sessions/${this.sessionId}`;
+                console.log('[ChatApp] 正在抓取歷史紀錄:', url);
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.messages = data.messages || [];
+                    this.sessionMetadata = data.metadata || {};
+                    console.log(`[ChatApp] 載入 ${this.messages.length} 條原始訊息，標題: ${this.sessionMetadata.title || '無'}`);
+                    this.scrollToBottom();
                 }
             } catch (error) {
-                addMessage('assistant', `Error: ${error.message}`);
+                console.error('[ChatApp] 抓取歷史失敗:', error);
             }
-        });
+        },
 
-        // Focus input
-        messageInput.focus();
-    </script>
-</body>
-</html>
+        adjustBackendUrl() {
+            // 自動偵測當前環境，如果是遠端存取，則同步修正後端 API 地址
+            const currentHost = window.location.hostname;
+            const currentPort = window.location.port;
+            
+            // 情況 A: 前端與 Orchestrator 都在同一個 IP 运行 (最常見)
+            if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+                if (this.backendUrl.includes('localhost') || this.backendUrl.includes('127.0.0.1')) {
+                    const originalUrl = new URL(this.backendUrl);
+                    // 保持原本配置的 Port，除非原本就是 8002 (前端 Port)，則嘗試換成 8000
+                    const targetPort = originalUrl.port;
+                    this.backendUrl = `${window.location.protocol}//${currentHost}:${targetPort}`;
+                    console.log('[ChatApp] 偵測到遠端存取，自動修正 API URL:', this.backendUrl);
+                }
+            }
+        },
+
+        async uploadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            this.isUploading = true;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                console.log('[ChatApp] 上傳文件中:', file.name);
+                const response = await fetch(`${this.backendUrl}/files/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // 在對話中加入上傳成功的通知
+                    this.messages.push({
+                        role: 'system',
+                        content: `✅ 文件上傳成功: ${file.name} (${(data.size / 1024).toFixed(1)} KB)`
+                    });
+                    this.scrollToBottom();
+                } else {
+                    alert('文件上傳失敗');
+                }
+            } catch (error) {
+                console.error('[ChatApp] 上傳錯誤:', error);
+                alert('上傳發生錯誤: ' + error.message);
+            } finally {
+                this.isUploading = false;
+                event.target.value = ''; // 清空 input
+            }
+        },
+        
+        loadSessionId() {
+            // 從 URL 參數或 localStorage 載入 session_id
+            const urlParams = new URLSearchParams(window.location.search);
+            this.sessionId = urlParams.get('session') || localStorage.getItem('sessionId') || 'default';
+        },
+
+        getWebSocketUrl() {
+            // 將 HTTP URL 轉換為 WebSocket URL
+            const url = new URL(this.backendUrl);
+            const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${protocol}//${url.host}/ws/${this.sessionId}`;
+        },
+
+        connectWebSocket() {
+            const wsUrl = this.getWebSocketUrl();
+            console.log('[ChatApp] 連線至 WebSocket:', wsUrl);
+
+            try {
+                this.websocket = new WebSocket(wsUrl);
+
+                this.websocket.onopen = () => {
+                    console.log('[ChatApp] WebSocket 已連線');
+                    Alpine.store('ws').setConnected(true);
+                };
+
+                this.websocket.onclose = (event) => {
+                    console.log('[ChatApp] WebSocket 已斷開:', event.code, event.reason);
+                    Alpine.store('ws').setConnected(false);
+                    
+                    // 嘗試重連（延遲 3 秒）
+                    setTimeout(() => {
+                        if (!Alpine.store('ws').connected) {
+                            console.log('[ChatApp] 嘗試重新連線...');
+                            this.connectWebSocket();
+                        }
+                    }, 3000);
+                };
+
+                this.websocket.onerror = (error) => {
+                    console.error('[ChatApp] WebSocket 錯誤詳情:', {
+                        url: wsUrl,
+                        readyState: this.websocket.readyState,
+                        error: error
+                    });
+                    Alpine.store('ws').setConnected(false);
+                };
+
+                this.websocket.onmessage = (event) => {
+                    this.handleWebSocketMessage(event.data);
+                };
+
+            } catch (error) {
+                console.error('[ChatApp] 建立 WebSocket 失敗:', error);
+                Alpine.store('ws').setConnected(false);
+            }
+        },
+
+        handleWebSocketMessage(data) {
+            try {
+                const response = JSON.parse(data);
+                const { content, success, error, metadata } = response;
+                const type = metadata?.type || 'stream';
+
+                if (type === 'stream' && content) {
+                    // 串流片段：附加到最後一條 assistant 訊息
+                    const lastMessage = this.messages[this.messages.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                        lastMessage.content += content;
+                    }
+                    this.scrollToBottom();
+                } 
+                else if (type === 'done') {
+                    // 串流完成
+                    console.log('[ChatApp] 串流完成，重新同步最後一條訊息');
+                    this.fetchHistory().then(() => {
+                        this.isLoading = false;
+                        this.scrollToBottom();
+                        // 通知側邊欄更新列表
+                        window.dispatchEvent(new CustomEvent('session-updated'));
+                    });
+                } 
+                else if (type === 'error') {
+                    // 錯誤
+                    console.error('[ChatApp] 伺服器錯誤:', error);
+                    const lastMessage = this.messages[this.messages.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                        lastMessage.content = `抱歉，發生錯誤：${error}`;
+                    }
+                    this.isLoading = false;
+                }
+
+            } catch (e) {
+                console.error('[ChatApp] 解析訊息失敗:', e);
+            }
+        },
+        
+        async sendMessage() {
+            const message = this.inputMessage.trim();
+            if (!message || this.isLoading) return;
+
+            // 檢查 WebSocket 連線狀態
+            if (!Alpine.store('ws').connected || this.websocket?.readyState !== WebSocket.OPEN) {
+                console.warn('[ChatApp] WebSocket 未連線，嘗試重連...');
+                this.connectWebSocket();
+                
+                // 等待連線
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (!Alpine.store('ws').connected) {
+                    this.messages.push({ 
+                        role: 'assistant', 
+                        content: '抱歉，無法連線至伺服器，請稍後再試。' 
+                    });
+                    return;
+                }
+            }
+            
+            // 添加用戶消息
+            this.messages.push({ role: 'user', content: message });
+            this.inputMessage = '';
+            this.isLoading = true;
+            
+            // 重置 textarea 高度
+            const textarea = document.querySelector('textarea');
+            if (textarea) textarea.style.height = 'auto';
+            
+            // 先添加一個空的助理消息，用於串流顯示
+            this.messages.push({ role: 'assistant', content: '' });
+            this.scrollToBottom();
+            
+            try {
+                // 透過 WebSocket 發送訊息
+                const payload = {
+                    content: message,
+                    user_id: 'web_user'
+                };
+                
+                this.websocket.send(JSON.stringify(payload));
+                console.log('[ChatApp] 已發送訊息');
+                
+            } catch (error) {
+                console.error('[ChatApp] 發送訊息失敗:', error);
+                const lastMessage = this.messages[this.messages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                    lastMessage.content = `抱歉，發送訊息時發生錯誤：${error.message}`;
+                }
+                this.isLoading = false;
+            }
+        },
+        
+        sendSuggestion(suggestion) {
+            this.inputMessage = suggestion;
+            this.sendMessage();
+        },
+        
+        clearMessages() {
+            if (confirm('確定要清空所有對話記錄嗎？')) {
+                this.messages = [];
+                this.sessionId = 'default';
+            }
+        },
+        
+        scrollToBottom() {
+            this.$nextTick(() => {
+                const container = this.$refs.messagesContainer;
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
+        },
+        
+        autoResize(event) {
+            const textarea = event.target;
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+        },
+        
+        renderMarkdown(content) {
+            if (!content) return '';
+            
+            try {
+                // 使用 marked 解析 Markdown
+                const html = marked.parse(content);
+                return html;
+            } catch (error) {
+                console.error('[ChatApp] Markdown 解析錯誤:', error);
+                return content;
+            }
+        }
+    }
+}
+</script>
+
+<!-- 隱藏元素樣式 (避免 Alpine.js 閃爍) -->
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+{% endblock %}

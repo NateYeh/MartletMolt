@@ -44,9 +44,9 @@ fi
 echo "⌛ 等待守護者就位..."
 sleep 3
 
-# 2. 啟動 Web Lite V2 前端 (入口 8002)
+# 2. 啟動 Web Lite 前端 (入口 8002)
 if [ "$START_FRONTEND" -eq 1 ]; then
-    start_service "martlet-web" "$PROJECT_ROOT/frontend/web-lite-v2" "python main.py"
+    start_service "martlet-web" "$PROJECT_ROOT/frontend/web-lite" "python main.py"
 fi
 
 echo "✨ MartletMolt 啟動流程完成！"

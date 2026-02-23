@@ -32,7 +32,7 @@
 | `backend/system_{a|b}/martlet_molt/providers/` | **LLM 接口層** | 切換模型供應商或調整模型呼叫參數（如溫度、Max Tokens）。 | ✅ 可修改 |
 | `backend/system_{a|b}/martlet_molt/gateway/` | **API 門戶** | 修改 REST API 端點、WebSocket 傳輸邏輯。 | ✅ 可修改 |
 | `orchestrator/` | **守護程序 (Guardian)** | 涉及 A/B 切換邏輯、系統同步、部署自動化時。 | ❌ **限人手動** |
-| `frontend/web-lite-v2/` | **介面層** | 修改聊天 UI、前端元件、Jinja2 模板或靜態資源。 | ✅ 可修改 |
+| `frontend/web-lite/` | **介面層** | 修改聊天 UI、前端元件、Jinja2 模板或靜態資源。 | ✅ 可修改 |
 | `scripts/` | **基礎設施腳本** | 用於服務啟動、System A/B 同步及底層維護。 | ✅ 可修改 |
 | `skills/` | **擴展技能中心** | **Agent 的演化靈魂**。存放所有動態加載的 Python/Markdown 技能目錄。 | ✅ 可修改 |
 | `Config/` | **運行配置** | 調整執行中的 API Key 或系統參數（不加入 Git 控制）。 | ✅ 可修改 |
