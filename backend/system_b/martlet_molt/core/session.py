@@ -132,9 +132,11 @@ class SessionManager:
 
     @contextmanager
     def _get_connection(self) -> Iterator[sqlite3.Connection]:
-        """獲取數據庫連接（上下文管理器）"""
+        """獲獲取數據庫連接（上下文管理器）"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
+        # 啟用外鍵約束，確保級聯刪除有效
+        conn.execute("PRAGMA foreign_keys = ON")
         try:
             yield conn
             conn.commit()
@@ -407,6 +409,28 @@ class SessionManager:
     def delete(self, session_id: str) -> bool:
         """兼容舊接口的刪除方法"""
         return self.delete_session(session_id)
+
+    def rename_session(self, session_id: str, new_title: str) -> bool:
+        """
+        重命名會話標題
+        
+        Args:
+            session_id: 會話 ID
+            new_title: 新標題
+            
+        Returns:
+            是否成功
+        """
+        session = self.get(session_id)
+        if not session:
+            return False
+            
+        session.metadata["title"] = new_title
+        session.updated_at = datetime.now().isoformat()
+        self.save(session)
+        
+        logger.info(f"Session {session_id} renamed to: {new_title}")
+        return True
 
     # ==================== 消息編輯功能 ====================
 

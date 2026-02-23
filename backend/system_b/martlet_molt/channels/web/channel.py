@@ -100,6 +100,29 @@ class WebChannel(BaseChannel):
             logger.exception(f"發送 WebSocket 訊息時發生錯誤: {e}")
             return False
 
+    async def send_stream(self, content: str) -> bool:
+        """發送串流片段"""
+        return await self.send(ChannelResponse(
+            content=content,
+            metadata={"type": "stream"}
+        ))
+
+    async def send_done(self) -> bool:
+        """發送完成訊號"""
+        return await self.send(ChannelResponse(
+            content="",
+            metadata={"type": "done"}
+        ))
+
+    async def send_error(self, error: str) -> bool:
+        """發送錯誤訊息"""
+        return await self.send(ChannelResponse(
+            content="",
+            success=False,
+            error=error,
+            metadata={"type": "error"}
+        ))
+
     async def stop(self) -> bool:
         """
         關閉 WebSocket 連線

@@ -1,9 +1,9 @@
-# TASK-WEB-FIX-001: 遠端存取 WebSocket 連線失敗修復 🚨
+# TASK-WEB-FIX-001: 遠端存取 WebSocket 連線失敗修復 (已完成 ✅)
 
 - **任務編號**: TASK-WEB-FIX-001
 - **優先級**: P0 (阻斷性 Bug)
-- **狀態**: ⏳ Active Sprint (進行中)
-- **建立日期**: 2025-02-23
+- **狀態**: ✅ Completed
+- **完成日期**: 2025-02-23
 
 ## 🧩 問題描述
 當用戶透過遠端 IP (如 `192.168.77.140`) 存取前端網頁時，儘管 Web UI 顯示的後端地址已正確修正，但 WebSocket 連線依然維持「未連線」狀態，導致訊息無法發送且提示「無法連線至伺服器」。
@@ -17,11 +17,11 @@
     - **JS 初始化順序**: `chat.html` 中的 `connectWebSocket` 可能在 `backendUrl` 尚未完全注入或校正前就已觸發。
 
 ## 📋 待辦事項 (Todo List)
-1. [ ] **Proxy 日誌審計**: 檢查 `martlet-orc` 的日誌，確認是否有收到來自遠端 IP 的 WS 請求。
-2. [ ] **路徑校驗**: 檢查 `orchestrator/proxy.py` 的 `proxy_websocket` 裝飾器路徑匹配是否包含 `/ws/{session_id}`。
-3. [ ] **JS 強化**: 在 `chat.html` 增加連線失敗的具體錯誤捕捉 (Error Event Details)，並確保連線前 URL 是最終校正後的版本。
-4. [ ] **Orchestrator 接收端檢查**: 確認 Orchestrator 的 `uvicorn` 是否允許來自非 localhost 的連線請求（目前的代理層）。
-
+1. [x] **Proxy 日誌審計**: 檢查 `martlet-orc` 的日誌，確認是否有收到來自遠端 IP 的 WS 請求。(完成：增加詳細日誌並修正路徑處理)
+2. [x] **路徑校驗**: 檢查 `orchestrator/proxy.py` 的 `proxy_websocket` 裝飾器路徑匹配是否包含 `/ws/{session_id}`。(完成：確保捕獲所有路徑並保留 query string)
+3. [x] **JS 強化**: 在 `chat.html` 增加連線失敗的具體錯誤捕捉 (Error Event Details)，並確保連線前 URL 是最終校正後的版本。(完成：增加錯誤詳情記錄)
+4. [x] **Orchestrator 接收端檢查**: 確認 Orchestrator 的 `uvicorn` 是否允許來自非 localhost 的連線請求。(完成：確認 host 為 0.0.0.0)
+5. [x] **修復後端缺失**: 發現後端 `system_a/b` 其實缺少了 `/ws/{session_id}` 的實際處理路由，已補全並同步。
 ## ✅ 驗證方式
 - 前端連線指示器變為 **綠色「已連線」**。
 - 遠端存取時能正常進行對話且接收串流響應。

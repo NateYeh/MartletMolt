@@ -4,11 +4,9 @@ Orchestrator 流量代理模組
 """
 
 import asyncio
-from typing import Any
 
 import httpx
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from loguru import logger
 from starlette.requests import Request
 from starlette.responses import Response
@@ -68,7 +66,16 @@ async def proxy_http(request: Request, path: str) -> Response:
 async def proxy_websocket(websocket: WebSocket, path: str):
     """通用的 WebSocket 反向代理"""
     target_base = get_target_url().replace("http://", "ws://").replace("https://", "wss://")
-    target_url = f"{target_base}/{path}"
+    # 確保路徑處理正確，避免雙斜槓，並保留 query string
+    query_string = websocket.query_params
+    full_path = path
+    if query_string:
+        full_path = f"{path}?{query_string}"
+
+    target_url = f"{target_base.rstrip('/')}/{full_path.lstrip('/')}"
+
+    logger.info(f"Proxying WS connection: {websocket.url.path} -> {target_url}")
+    logger.debug(f"WS Headers: {dict(websocket.headers)}")
 
     await websocket.accept()
 
@@ -105,5 +112,5 @@ async def proxy_websocket(websocket: WebSocket, path: str):
     finally:
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass

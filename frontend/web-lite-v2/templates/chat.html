@@ -293,7 +293,11 @@ function chatApp() {
                 };
 
                 this.websocket.onerror = (error) => {
-                    console.error('[ChatApp] WebSocket 錯誤:', error);
+                    console.error('[ChatApp] WebSocket 錯誤詳情:', {
+                        url: wsUrl,
+                        readyState: this.websocket.readyState,
+                        error: error
+                    });
                     Alpine.store('ws').setConnected(false);
                 };
 

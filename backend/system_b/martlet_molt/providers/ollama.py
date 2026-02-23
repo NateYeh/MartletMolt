@@ -31,7 +31,7 @@ class OllamaProvider(BaseProvider):
     def __init__(
         self,
         api_key: str = "",
-        base_url: str = "https://ollama.com",
+        base_url: str | None = None,
         model: str = "glm-5",
         max_tokens: int = 4096,
         temperature: float = 0.7,
@@ -41,17 +41,11 @@ class OllamaProvider(BaseProvider):
         """
         初始化 Ollama Provider
 
-        Args:
-            api_key: Ollama Cloud API Key (從環境變數 OLLAMA_API_KEY 讀取)
-            base_url: API 端點，預設為 Ollama Cloud
-            model: 模型名稱，預設為 glm-5
-            max_tokens: 最大輸出 token 數
-            temperature: 溫度參數
-            timeout: 請求逾時秒數
-            **kwargs: 其他參數
+        注意：base_url 預設優先從環境變數或配置讀取，以支援代理。
         """
         self.api_key = api_key or os.environ.get("OLLAMA_API_KEY", "")
-        self.base_url = base_url.rstrip("/")
+        # 如果沒有傳入也沒配置，才退回到預設的 cloud 地址
+        self.base_url = (base_url or os.environ.get("OLLAMA_BASE_URL", "https://ollama.com")).rstrip("/")
         self.model = model
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -217,8 +211,10 @@ class OllamaProvider(BaseProvider):
             return content
 
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
-            raise RuntimeError(f"Ollama API error: {e.response.status_code}") from e
+            status_code = e.response.status_code if e.response is not None else "Unknown"
+            error_text = e.response.text if e.response is not None else str(e)
+            logger.error(f"HTTP error: {status_code} - {error_text}")
+            raise RuntimeError(f"Ollama API error: {status_code}") from e
         except Exception:
             logger.exception(f"Ollama chat error: {self.model}")
             raise
@@ -264,8 +260,10 @@ class OllamaProvider(BaseProvider):
             return content, tool_calls
 
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
-            raise RuntimeError(f"Ollama API error: {e.response.status_code}") from e
+            status_code = e.response.status_code if e.response is not None else "Unknown"
+            error_text = e.response.text if e.response is not None else str(e)
+            logger.error(f"HTTP error: {status_code} - {error_text}")
+            raise RuntimeError(f"Ollama API error: {status_code}") from e
         except Exception:
             logger.exception(f"Ollama chat_with_tools error: {self.model}")
             raise
@@ -314,8 +312,10 @@ class OllamaProvider(BaseProvider):
                         continue
 
         except requests.exceptions.HTTPError as e:
-            logger.error(f"HTTP error: {e.response.status_code} - {e.response.text}")
-            raise RuntimeError(f"Ollama API error: {e.response.status_code}") from e
+            status_code = e.response.status_code if e.response is not None else "Unknown"
+            error_text = e.response.text if e.response is not None else str(e)
+            logger.error(f"HTTP error: {status_code} - {error_text}")
+            raise RuntimeError(f"Ollama API error: {status_code}") from e
         except Exception:
             logger.exception(f"Ollama stream error: {self.model}")
             raise

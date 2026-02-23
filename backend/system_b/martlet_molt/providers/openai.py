@@ -25,11 +25,18 @@ class OpenAIProvider(BaseProvider):
         max_tokens: int | None = None,
         temperature: float | None = None,
     ):
+        """
+        初始化 OpenAI Provider
+        
+        注意：為了支援雙容器架構，base_url 應優先從配置讀取，
+        若未提供則預設為 None (由 SDK 使用預設或環境變數)。
+        """
         config = settings.providers.openai
         if config is None:
-            config = type("Config", (), {})()  # Empty config
+            config = type("Config", (), {})()
 
         self.api_key = api_key or getattr(config, "api_key", "") or ""
+        # 核心改動：不提供寫死的 https://api.openai.com，這讓我們可以輕鬆切換到 Proxy
         self.base_url = base_url or getattr(config, "base_url", None)
         self.model = model or getattr(config, "model", "gpt-4o")
         self.max_tokens = max_tokens or getattr(config, "max_tokens", 4096)

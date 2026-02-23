@@ -19,10 +19,6 @@
 ## 🔥 當前衝刺 (Active Sprints)
 *優先處理影響系統可用性的關鍵 Bug。*
 
-### TASK-WEB-FIX-001: 遠端 WS 連線修復 🚨
-- **說明**: 修復遠端存取時 WebSocket 無法連線至 Orchestrator Proxy 的問題。
-- **文件**: [`TASK-WEB-FIX-001_Remote_WS_Connection_Issue.md`](./TASK-WEB-FIX-001_Remote_WS_Connection_Issue.md)
-- **當前進度**: 10%。 (已完成問題定義與環境排查)
 
 ---
 
@@ -54,6 +50,7 @@
 
 | ID | 任務名稱 | 完成日期 |
 | :--- | :--- | :--- |
+| TASK-WEB-FIX-001 | 遠端 WS 連線修復 (雙系統補完) | 2025-02-23 |
 | TASK-ORC-03 | 流量代理層實作 (Zero-Downtime) | 2025-02-23 |
 | TASK-ORC-02 | 強化同步機制 (Smart Syncer) | 2025-02-23 |
 | TASK-ORC-01 | Orchestrator 深度審計 | 2025-02-23 |
