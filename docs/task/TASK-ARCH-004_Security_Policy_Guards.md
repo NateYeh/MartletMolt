@@ -12,6 +12,9 @@
   - 工具調用必須帶有單次任務的 Session ID，確保審計。
 - **異常行為偵測**:
   - 監控 Sandbox 的網路流量異常。
+- **裝置存取隔離 (Device Access Guard)**:
+  - 嚴格限制裝置識別名冊 `registered_devices.json` 的寫入權限，僅允許 Host 管理，Sandbox 僅能透過代理進行唯讀或受限存取。
+  - 實作裝置金鑰週期性更換機制，並透過 Host 橋接同步。
 
 ## 3. 修改路徑清單 (預計)
 - `backend/system_{a|b}/martlet_molt/core/security.py` (新增)

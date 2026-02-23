@@ -8,6 +8,7 @@
 - **Host 代理端點**:
   - `POST /proxy/v1/chat/completions`: 接收 Sandbox 轉發的請求，注入 `Authorization` Header 後發送至 LLM 供應商。
   - `POST /proxy/v1/tools/execute`: 安全審核並執行特定工具請求（部分敏感工具）。
+  - **WebSocket 密鑰注入**: 負責在 Sandbox 嘗試與外部裝置通訊時，自動從 Host 端注入 `X-Device-Key`，確保 Sandbox 無需持有全域金鑰。
 - **Sandbox 路由改造**:
   - 將 `core/providers` 中的請求網址導向 Host 提供的代理位址。
   - 確保 Sandbox 啟動時不再從環境變數讀取任何 API Keys。
