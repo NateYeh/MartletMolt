@@ -76,7 +76,9 @@ def start(
 
     if process_manager.start(system):
         console.print(f"[green]System {system} started successfully[/green]")
-        console.print(f"[dim]URL: {getattr(settings, f'system_{system}').url}[/dim]")
+        display_host = "your-server-ip" if settings.host == "0.0.0.0" else settings.host
+        console.print(f"[bold magenta]Public Entry: http://{display_host}:{settings.port}[/bold magenta]")
+        console.print(f"[dim]Internal Backend: {getattr(settings, f'system_{system}').url}[/dim]")
     else:
         console.print(f"[red]Failed to start system {system}[/red]")
         if proxy_process:

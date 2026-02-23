@@ -37,7 +37,7 @@ class SystemConfig(BaseModel):
 
     name: str
     port: int
-    host: str = "0.0.0.0"
+    host: str = "127.0.0.1"  # 內部通訊預設使用 localhost
     path: Path
 
     @property
