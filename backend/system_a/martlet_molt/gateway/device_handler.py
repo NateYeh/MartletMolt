@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from loguru import logger
 
 from ..core.device_registry import device_registry
@@ -9,27 +9,27 @@ from ..core.device_persistence import persistence
 router = APIRouter()
 
 @router.websocket("/ws/devices")
-async def device_websocket_handler(
-    websocket: WebSocket, 
-    key: str = Query(None), 
-    device_id: str = Query(None)
-):
+async def device_websocket_handler(websocket: WebSocket):
     """
     IoT 裝置專用的 WebSocket 入口。
     
-    兩層驗證：
-    1. key: 全域萬能鑰匙 (必需)
-    2. device_id: 裝置識別碼 (可選，新裝置則由伺服器分配)
+    驗證邏輯：
+    1. X-Device-Key: 存放在 Header 中的全域金鑰 (必須)
+    2. X-Device-ID: 存放在 Header 中的識別碼 (可選)
     """
+    
+    # 從 Headers 讀取驗證資訊
+    key = websocket.headers.get("x-device-key")
+    device_id = websocket.headers.get("x-device-id")
     
     # --- 第一道防線：萬能鑰匙驗證 ---
     if not settings.gateway.device_key:
         logger.warning("系統未設定 device_key，拒絕所有裝置連線。")
-        await websocket.close(code=4003) # Forbidden
+        await websocket.close(code=4003)
         return
 
     if key != settings.gateway.device_key:
-        logger.warning(f"攔截到錯誤的連線金鑰: {key}")
+        logger.warning(f"攔截到錯誤或缺失的連線金鑰。")
         await websocket.close(code=4003)
         return
 
@@ -46,7 +46,7 @@ async def device_websocket_handler(
         await websocket.send_text(json.dumps({
             "type": "assignment",
             "device_id": current_device_id,
-            "message": "請儲存此 ID 並在下次連線時使用 ?device_id= 參數帶入。"
+            "message": "請儲存此 ID 並在下次連線時於 Header 中帶入 X-Device-ID。"
         }))
     else:
         logger.info(f"裝置 {current_device_id} (老朋友) 已連線。")

@@ -1,6 +1,6 @@
-# MartletMolt 外部裝置連線指南 (External Device Connection Guide) - V2
+# MartletMolt 外部裝置連線指南 (External Device Connection Guide) - V3 (Secure Header Edition)
 
-本文件說明如何讓外部硬體（如 ESP32、樹莓派、或其他伺服器）連線至 MartletMolt 後端。為了區分相同硬體的裝置並確保安全性，我們採用了「金鑰驗證」與「動態識別」機制。
+本文件說明如何讓外部硬體連線至 MartletMolt 後端。為了最高安全性，我們不使用網址傳遞密鑰，而是透過 **HTTP Headers**。
 
 ---
 
@@ -9,17 +9,16 @@
 - **協議**: WebSocket
 - **數據格式**: JSON (UTF-8)
 - **連線位址**: `ws://<SERVER_IP>:8001/ws/devices`
-- **必備參數**:
-    - `key`: 系統生成的萬能鑰匙 (必須)。
-    - `device_id`: 裝置識別碼 (可選)。初次連線請忽略，由伺服器分配。
+- **必備 Headers**:
+    - `X-Device-Key`: 系統生成的萬能鑰匙 (必須)。
+    - `X-Device-ID`: 裝置識別碼 (可選)。初次連線請忽略。
 
 ---
 
-## 2. 身份核對流程 (Authentication Flow)
+## 2. 身份核對流程
 
 ### 第一階段：初次連線 (配對)
-若裝置尚未擁有 `device_id`，請僅帶入 `key` 連線：
-`ws://<SERVER_IP>:8001/ws/devices?key=YOUR_GLOBAL_KEY`
+裝置連線時僅帶入 `X-Device-Key` Header。
 
 **伺服器回應 (Assignment Event):**
 後端會立即核發一個 ID 給你：
@@ -27,66 +26,41 @@
 {
   "type": "assignment",
   "device_id": "device-a1b2c3d4",
-  "message": "請儲存此 ID 並在下次連線時使用。"
+  "message": "請儲存此 ID 並在下次連線時於 Header 中帶入 X-Device-ID。"
 }
 ```
-*裝置必須將此 `device_id` 永久存儲在本地（如 NVS, SPIFFS, 或 .env 文件）。*
 
 ### 第二階段：正式連線 (識別)
-擁有 ID 後，請使用以下網址連線：
-`ws://<SERVER_IP>:8001/ws/devices?key=YOUR_GLOBAL_KEY&device_id=device-a1b2c3d4`
+擁有 ID 後，連線時請帶入兩個 Headers：
+1. `X-Device-Key: YOUR_GLOBAL_KEY`
+2. `X-Device-ID: device-a1b2c3d4`
 
 ---
 
-## 3. 功能註冊與通訊
+## 3. Python 測試範例 (使用 Header)
 
-連線驗證成功後，裝置需按照以下步驟操作：
+```python
+import asyncio
+import websockets
+import json
 
-### 步驟 A：發送註冊封包
-```json
-{
-  "type": "register",
-  "capabilities": [
-    {
-      "name": "toggle_light",
-      "description": "控制客廳電燈開關",
-      "parameters": {
-        "type": "object",
-        "properties": { "state": { "type": "boolean" } },
-        "required": ["state"]
-      }
+async def connect_device():
+    uri = "ws://localhost:8001/ws/devices"
+    headers = {
+        "X-Device-Key": "-ZmE8QvCPnOsgWwcZfOndUn0HMhLDiaDFA12n5sksz4",
+        # "X-Device-ID": "device-previous-id"  # 如果已有 ID 則帶入
     }
-  ]
-}
-```
+    
+    async with websockets.connect(uri, extra_headers=headers) as websocket:
+        # 1. 處理配對與註冊...
+        pass
 
-### 步驟 B：接收驗證確認
-```json
-{
-  "type": "verified",
-  "device_id": "device-a1b2c3d4",
-  "message": "Welcome to MartletMolt Hive!"
-}
+asyncio.run(connect_device())
 ```
 
 ---
 
-## 4. 指令與回饋 (與 V1 相同)
-
-### 接收指令 (Backend -> Device)
-```json
-{ "type": "execute", "method": "toggle_light", "params": { "state": true } }
-```
-
-### 回報結果 (Device -> Backend)
-```json
-{ "type": "result", "data": "OK" }
-```
-
----
-
-## 5. 安全性與維護
-
-1. **更新金鑰**: 管理員可以執行 `scripts/generate_device_key.py` 來更換全球萬能鑰匙。一旦更換，所有舊裝置需更新 key 才能連線。
-2. **裝置管理**: 註冊過的裝置資訊存儲於 `shared/data/registered_devices.json`，若要強迫裝置重新配對，只需從該 JSON 中刪除對應的 ID。
-3. **心跳**: 建議每 30 秒發送一次 `{"type": "pong"}` 以維持 WebSocket 通道。
+## 4. 安全優點
+1. **防日誌洩漏**: URL 保持簡潔，敏感金鑰不會出現在伺服器訪問日誌中。
+2. **防緩存劫持**: Headers 內容不會被瀏覽器歷史紀錄或 proxy 緩存。
+3. **隱蔽性**: 在網路監控中，Payload 與 Header 都受到 TLS 加密（若使用 WSS），比 URL 參數更隱蔽。
