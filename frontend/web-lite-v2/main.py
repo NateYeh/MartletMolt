@@ -18,9 +18,10 @@ BASE_DIR = Path(__file__).resolve().parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
-# 後端 API 配置
-BACKEND_HOST = "127.0.0.1"
-BACKEND_PORT = 8001
+# 後端 API 配置 (指向 Orchestrator 入口)
+import os
+BACKEND_HOST = os.getenv("MARTLET_BACKEND_HOST", "127.0.0.1")
+BACKEND_PORT = int(os.getenv("MARTLET_BACKEND_PORT", 8000))
 BACKEND_URL = f"http://{BACKEND_HOST}:{BACKEND_PORT}"
 
 # FastAPI 應用

@@ -238,13 +238,18 @@ function chatApp() {
         },
 
         adjustBackendUrl() {
-            // 如果當前頁面的 host 不是 localhost，但後端網址是 localhost
-            // 則自動將後端網址修正為當前頁面的 host，確保遠端存取正常
-            if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-                if (this.backendUrl.includes('127.0.0.1') || this.backendUrl.includes('0.0.0.0')) {
+            // 自動偵測當前環境，如果是遠端存取，則同步修正後端 API 地址
+            const currentHost = window.location.hostname;
+            const currentPort = window.location.port;
+            
+            // 情況 A: 前端與 Orchestrator 都在同一個 IP 运行 (最常見)
+            if (currentHost !== 'localhost' && currentHost !== '127.0.0.1') {
+                if (this.backendUrl.includes('localhost') || this.backendUrl.includes('127.0.0.1')) {
                     const originalUrl = new URL(this.backendUrl);
-                    this.backendUrl = `${window.location.protocol}//${window.location.hostname}:${originalUrl.port}`;
-                    console.log('[ChatApp] 自動修正後端 URL 為:', this.backendUrl);
+                    // 保持原本配置的 Port，除非原本就是 8002 (前端 Port)，則嘗試換成 8000
+                    const targetPort = originalUrl.port;
+                    this.backendUrl = `${window.location.protocol}//${currentHost}:${targetPort}`;
+                    console.log('[ChatApp] 偵測到遠端存取，自動修正 API URL:', this.backendUrl);
                 }
             }
         },
