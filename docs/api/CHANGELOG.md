@@ -31,7 +31,7 @@
 
 #### 文檔
 - `docs/api/README.md` - 系統說明文檔
-- `CHANGELOG_API_DOCS.md` - 本日誌
+- `docs/api/CHANGELOG.md` - 本日誌
 
 ### 🔧 工作流程整合
 

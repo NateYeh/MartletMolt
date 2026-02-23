@@ -71,7 +71,7 @@ def get_provider() -> BaseProvider:
     if provider_name == "ollama":
         return OllamaProvider(
             api_key=provider_config.api_key,
-            base_url=provider_config.base_url or "https://ollama.com",
+            base_url=provider_config.base_url,
             model=provider_config.model,
             max_tokens=provider_config.max_tokens,
             temperature=provider_config.temperature,
@@ -80,6 +80,7 @@ def get_provider() -> BaseProvider:
     elif provider_name == "openai":
         return OpenAIProvider(
             api_key=provider_config.api_key,
+            base_url=provider_config.base_url,
             model=provider_config.model,
             max_tokens=provider_config.max_tokens,
             temperature=provider_config.temperature,
@@ -228,8 +229,14 @@ class SessionDetailResponse(BaseModel):
     metadata: dict
 
 
-class DeleteSessionResponse(BaseModel):
-    """刪除會話回應"""
+class SessionRenameRequest(BaseModel):
+    """重命名會話請求"""
+
+    title: str
+
+
+class SessionActionResponse(BaseModel):
+    """會話操作通用回應"""
 
     success: bool
     message: str
@@ -285,7 +292,29 @@ async def get_session(session_id: str):
     )
 
 
-@router.delete("/sessions/{session_id}", response_model=DeleteSessionResponse)
+@router.patch("/sessions/{session_id}", response_model=SessionActionResponse)
+async def rename_session(session_id: str, request: SessionRenameRequest):
+    """
+    重命名會話 (TASK-012)
+
+    Args:
+        session_id: 會話 ID
+        request: 包含新標題的請求
+
+    Returns:
+        操作結果
+    """
+    success = session_manager.rename_session(session_id, request.title)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Session '{session_id}' not found")
+
+    return SessionActionResponse(
+        success=True,
+        message=f"Session renamed to: {request.title}",
+    )
+
+
+@router.delete("/sessions/{session_id}", response_model=SessionActionResponse)
 async def delete_session(session_id: str):
     """
     刪除會話
@@ -307,7 +336,7 @@ async def delete_session(session_id: str):
     # 刪除會話
     success = session_manager.delete(session_id)
 
-    return DeleteSessionResponse(
+    return SessionActionResponse(
         success=success,
         message=f"Session '{session_id}' deleted successfully" if success else "Failed to delete session",
     )
