@@ -22,6 +22,7 @@ class GatewayConfig(BaseModel):
     port: int = 8001
     debug: bool = False
     reload: bool = False
+    device_key: str = ""  # 裝置連線萬能鑰匙
 
     @property
     def url(self) -> str:
