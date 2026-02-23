@@ -98,6 +98,7 @@ class Session(BaseModel):
                     ProviderMessage(
                         role=msg.role,
                         content=msg.content,
+                        tool_calls=msg.tool_calls,
                     )
                 )
 

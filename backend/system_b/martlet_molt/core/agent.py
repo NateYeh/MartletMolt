@@ -35,7 +35,7 @@ class Agent:
 
     def add_system_prompt(self, prompt: str) -> None:
         """添加系統提示"""
-        self.session.add_message("system", prompt)
+        session_manager.add_message(self.session.id, "system", prompt)
 
     def _register_tools_to_provider(self) -> None:
         """註冊 Tools 到 Provider"""
@@ -87,7 +87,7 @@ class Agent:
         self._register_tools_to_provider()
 
         # 2. 添加用戶訊息
-        self.session.add_message("user", user_input)
+        session_manager.add_message(self.session.id, "user", user_input)
 
         # 3. Tool Calling Loop
         iteration = 0
@@ -95,7 +95,7 @@ class Agent:
             iteration += 1
             logger.debug(f"Tool calling iteration: {iteration}")
 
-            # 準備訊息
+            # 準備訊息 (從 DB 確保載入最新，或是使用緩存)
             messages = self.session.get_messages_for_api()
 
             # 調用 Provider (支援 tools)
@@ -113,15 +113,15 @@ class Agent:
 
             # 如果沒有 tool calls，返回結果
             if not tool_calls:
-                self.session.add_message("assistant", content)
-                session_manager.save(self.session)
+                session_manager.add_message(self.session.id, "assistant", content)
                 return content
 
             # 有 tool calls，需要執行並繼續對話
             logger.info(f"AI requested {len(tool_calls)} tool calls")
 
             # 構建 assistant 訊息（包含 tool_calls）
-            self.session.add_message(
+            session_manager.add_message(
+                self.session.id,
                 "assistant",
                 content,
                 tool_calls=self._format_tool_calls_for_message(tool_calls),
@@ -138,12 +138,13 @@ class Agent:
                 try:
                     result = self.tools.execute(tool_name, arguments)
 
-                    # 記錄到會話的 tool_calls 列表
+                    # 記錄到會話的 tool_calls 列表 (這裡維持內存 update，主要由 add_message 持久化)
                     self.session.add_tool_call(tool_name, arguments)
 
                     # 添加 tool 結果訊息
                     tool_content = json.dumps(result.data, ensure_ascii=False) if result.data else result.error
-                    self.session.add_message(
+                    session_manager.add_message(
+                        self.session.id,
                         "tool",
                         tool_content,
                         name=tool_name,
@@ -155,7 +156,8 @@ class Agent:
                 except Exception as e:
                     logger.exception(f"Tool execution failed: {e}")
                     # 添加錯誤結果
-                    self.session.add_message(
+                    session_manager.add_message(
+                        self.session.id,
                         "tool",
                         f"Error: {e}",
                         name=tool_name,
@@ -210,7 +212,7 @@ class Agent:
         self._register_tools_to_provider()
 
         # 添加用戶訊息
-        self.session.add_message("user", user_input)
+        session_manager.add_message(self.session.id, "user", user_input)
 
         # 準備訊息
         messages = self.session.get_messages_for_api()
@@ -222,10 +224,7 @@ class Agent:
             yield chunk
 
         # 添加助手訊息
-        self.session.add_message("assistant", full_response)
-
-        # 儲存會話
-        session_manager.save(self.session)
+        session_manager.add_message(self.session.id, "assistant", full_response)
 
     async def stream_to_buffer(
         self,
@@ -249,7 +248,7 @@ class Agent:
         self._register_tools_to_provider()
 
         # 添加用戶訊息
-        self.session.add_message("user", user_input)
+        session_manager.add_message(self.session.id, "user", user_input)
 
         # 準備訊息
         messages = self.session.get_messages_for_api()
@@ -270,10 +269,7 @@ class Agent:
             buffer.complete()
 
             # 添加助手訊息
-            self.session.add_message("assistant", full_response)
-
-            # 儲存會話
-            session_manager.save(self.session)
+            session_manager.add_message(self.session.id, "assistant", full_response)
 
             logger.info(f"Stream completed: session={self.session.id}, response_len={len(full_response)}")
 

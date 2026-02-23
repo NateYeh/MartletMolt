@@ -223,12 +223,22 @@
                 <!-- 工具列 -->
                 <div class="absolute bottom-3 right-3 flex items-center space-x-2">
                     <!-- 附加功能按鈕 -->
+                    <input type="file" x-ref="fileInput" class="hidden" @change="uploadFile($event)">
                     <button type="button" 
-                            class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group"
-                            title="上傳文件（開發中）">
+                            @click="$refs.fileInput.click()"
+                            :disabled="isUploading"
+                            class="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors group relative"
+                            title="上傳文件">
                         <svg class="w-5 h-5 text-gray-400 dark:text-slate-500 group-hover:text-gray-600 dark:group-hover:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                         </svg>
+                        <!-- 上傳中動畫 -->
+                        <span x-show="isUploading" class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50 rounded-lg">
+                            <svg class="animate-spin h-4 w-4 text-blue-600" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </span>
                     </button>
                     
                     <!-- 發送按鈕 -->
@@ -271,6 +281,7 @@ function chatApp() {
         messages: [],
         inputMessage: '',
         isLoading: false,
+        isUploading: false,
         sessionId: 'default',
         backendUrl: '{{ backend_url }}',
         websocket: null,
@@ -321,6 +332,41 @@ function chatApp() {
                     this.backendUrl = `${window.location.protocol}//${currentHost}:${targetPort}`;
                     console.log('[ChatApp] 偵測到遠端存取，自動修正 API URL:', this.backendUrl);
                 }
+            }
+        },
+
+        async uploadFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            this.isUploading = true;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                console.log('[ChatApp] 上傳文件中:', file.name);
+                const response = await fetch(`${this.backendUrl}/files/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // 在對話中加入上傳成功的通知
+                    this.messages.push({
+                        role: 'system',
+                        content: `✅ 文件上傳成功: ${file.name} (${(data.size / 1024).toFixed(1)} KB)`
+                    });
+                    this.scrollToBottom();
+                } else {
+                    alert('文件上傳失敗');
+                }
+            } catch (error) {
+                console.error('[ChatApp] 上傳錯誤:', error);
+                alert('上傳發生錯誤: ' + error.message);
+            } finally {
+                this.isUploading = false;
+                event.target.value = ''; // 清空 input
             }
         },
         
@@ -401,6 +447,8 @@ function chatApp() {
                     this.fetchHistory().then(() => {
                         this.isLoading = false;
                         this.scrollToBottom();
+                        // 通知側邊欄更新列表
+                        window.dispatchEvent(new CustomEvent('session-updated'));
                     });
                 } 
                 else if (type === 'error') {

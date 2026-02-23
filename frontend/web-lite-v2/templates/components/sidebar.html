@@ -22,7 +22,7 @@
     </div>
     
     <!-- 導航菜單 -->
-    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1" x-data="sidebarApp()" x-init="init()">
         <!-- 對話 -->
         <a href="/chat" 
            class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 
@@ -31,48 +31,115 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                       d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
             </svg>
-            <span class="font-medium">對話</span>
+            <span class="font-medium">首頁 / 聊天</span>
         </a>
+
+        <!-- 會話管理區 -->
+        <div class="mt-6 mb-2 flex items-center justify-between px-4">
+            <span class="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest">最近對話</span>
+            <button @click="refreshSessions()" class="text-gray-400 hover:text-blue-500 transition-colors">
+                <svg class="w-3.5 h-3.5" :class="loading ? 'animate-spin' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="space-y-0.5 max-h-64 overflow-y-auto custom-scrollbar">
+            <template x-for="session in sessions" :key="session.id">
+                <div class="group flex items-center px-2">
+                    <a :href="'/chat?session=' + session.id" 
+                       class="flex-1 flex items-center px-3 py-2.5 rounded-xl text-sm transition-all duration-200"
+                       :class="currentSessionId == session.id ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'">
+                        <span class="mr-2 opacity-50">💬</span>
+                        <span class="truncate" x-text="session.metadata.title || session.id"></span>
+                    </a>
+                    <!-- 刪除按鈕 -->
+                    <button @click="deleteSession(session.id)" 
+                            class="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 transition-all rounded-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </template>
+            <div x-show="sessions.length === 0 && !loading" class="px-4 py-3 text-xs text-gray-400 italic">
+                暫無歷史紀錄
+            </div>
+        </div>
         
         <!-- 分隔線 -->
-        <div class="h-px bg-gray-200 dark:bg-slate-700 my-3"></div>
+        <div class="h-px bg-gray-200 dark:bg-slate-700 my-4"></div>
         
-        <!-- 功能開發中提示 -->
+        <!-- 系統選單 -->
         <div class="text-xs text-gray-400 dark:text-slate-500 px-4 py-2 uppercase tracking-wider font-medium">
-            功能開發中
+            系統
         </div>
         
         <!-- Agent 設定 -->
-        <a href="#" 
-           class="flex items-center px-4 py-3 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 opacity-50 cursor-not-allowed"
-           onclick="event.preventDefault()">
+        <a href="/settings" 
+           class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 
+                  {% if request.path == '/settings' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800{% endif %}">
             <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                       d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
             </svg>
-            <span>Agent 設定</span>
+            <span class="font-medium">Agent 設定</span>
         </a>
         
         <!-- 工具管理 -->
-        <a href="#" 
-           class="flex items-center px-4 py-3 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 opacity-50 cursor-not-allowed"
-           onclick="event.preventDefault()">
+        <a href="/tools" 
+           class="flex items-center px-4 py-3 rounded-xl transition-all duration-200 
+                  {% if request.path == '/tools' %}bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800{% endif %}">
             <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
-            <span>工具管理</span>
+            <span class="font-medium">工具管理</span>
         </a>
-        
-        <!-- 歷史記錄 -->
-        <a href="#" 
-           class="flex items-center px-4 py-3 rounded-xl text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-all duration-200 opacity-50 cursor-not-allowed"
-           onclick="event.preventDefault()">
-            <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <span>歷史記錄</span>
-        </a>
+
+        <!-- JS Logic for Sidebar -->
+        <script>
+        function sidebarApp() {
+            return {
+                sessions: [],
+                loading: false,
+                currentSessionId: '',
+                backendUrl: '{{ backend_url }}',
+
+                init() {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    this.currentSessionId = urlParams.get('session') || 'default';
+                    this.refreshSessions();
+                    
+                    // 監聽會話更新事件（來自 chatApp）
+                    window.addEventListener('session-updated', () => this.refreshSessions());
+                },
+
+                async refreshSessions() {
+                    this.loading = true;
+                    try {
+                        const response = await fetch(`${this.backendUrl}/sessions`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.sessions = data.sessions;
+                        }
+                    } catch (e) { console.error('Sidebar fetch fail:', e); }
+                    finally { this.loading = false; }
+                },
+
+                async deleteSession(id) {
+                    if (!confirm(`確定要刪除對話 "${id}" 嗎？`)) return;
+                    try {
+                        const response = await fetch(`${this.backendUrl}/sessions/${id}`, { method: 'DELETE' });
+                        if (response.ok) {
+                            this.refreshSessions();
+                            if (this.currentSessionId === id) window.location.href = '/chat';
+                        }
+                    } catch (e) { alert('刪除失敗'); }
+                }
+            }
+        }
+        </script>
     </nav>
     
     <!-- 底部用戶區域 -->

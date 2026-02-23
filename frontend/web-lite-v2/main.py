@@ -58,6 +58,28 @@ async def chat(request: Request):
     return templates.TemplateResponse("chat.html", {"request": request, "backend_url": current_backend})
 
 
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """設定頁面"""
+    current_backend = BACKEND_URL
+    if "127.0.0.1" in BACKEND_URL or "localhost" in BACKEND_URL:
+        host = request.url.hostname
+        current_backend = f"http://{host}:{BACKEND_PORT}"
+
+    return templates.TemplateResponse("settings.html", {"request": request, "backend_url": current_backend})
+
+
+@app.get("/tools", response_class=HTMLResponse)
+async def tools_page(request: Request):
+    """工具管理頁面"""
+    current_backend = BACKEND_URL
+    if "127.0.0.1" in BACKEND_URL or "localhost" in BACKEND_URL:
+        host = request.url.hostname
+        current_backend = f"http://{host}:{BACKEND_PORT}"
+
+    return templates.TemplateResponse("tools.html", {"request": request, "backend_url": current_backend})
+
+
 @app.get("/health")
 async def health():
     """健康檢查"""
@@ -93,9 +115,9 @@ def main():
     if not is_backend_up:
         logger.warning("⚠️ 警告: 目前偵測不到後端服務，前端雖然可以啟動，但聊天功能可能無法使用唷！")
 
-    logger.info("[Web Lite V2] 前端地址: http://0.0.0.0:8002")
+    logger.info("[Web Lite V2] 前端地址: http://0.0.0.0:8003")
 
-    uvicorn.run(app, host="0.0.0.0", port=8002, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8003, log_level="info")
 
 
 if __name__ == "__main__":
