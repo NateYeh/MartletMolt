@@ -14,6 +14,7 @@ SYNC_MODULES = [
     "providers",
     "core",
     "gateway",
+    "skills",
 ]
 
 

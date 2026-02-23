@@ -126,6 +126,7 @@ class ToolRegistry:
         from martlet_molt.tools.file_write import FileWriteTool
         from martlet_molt.tools.iot_control import IOTControlTool
         from martlet_molt.tools.shell import ShellTool
+        from martlet_molt.tools.skill import SkillTool
         from martlet_molt.tools.web_click import WebClickTool
         from martlet_molt.tools.web_evaluate import WebEvaluateTool
         from martlet_molt.tools.web_extract import WebExtractTool
@@ -141,3 +142,4 @@ class ToolRegistry:
         self.register(FileReadTool())
         self.register(FileWriteTool())
         self.register(IOTControlTool())
+        self.register(SkillTool())

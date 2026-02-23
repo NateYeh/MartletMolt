@@ -19,6 +19,7 @@
 ## 🔥 當前衝刺 (Active Sprints)
 *優先處理影響系統可用性的關鍵 Bug。*
 
+*(目前沒有進行中的衝刺)*
 
 ---
 
@@ -39,7 +40,7 @@
 *已規劃完成，待當前衝刺結束後啟動。*
 
 ### 🛠️ 核心功能增強
-- **TASK-001: Anthropic Provider 實作** 📄
+- **TASK-001: Anthropic Provider 實作** (⏸️ 缺 Key 暫存) 📄
 - **TASK-015: Gemini (Google) Provider 實作** 📄
 - **TASK-002: Tool 參數嚴格驗證** 📄
 
@@ -50,6 +51,7 @@
 
 | ID | 任務名稱 | 完成日期 |
 | :--- | :--- | :--- |
+| TASK-008 | Skills 學習系統 (OpenClaw 風格) | 2025-02-23 |
 | TASK-WEB-ADV-01 | 前端訊息可視化增強 (系統提示/思考過程/工具調用) | 2025-02-23 |
 | TASK-WEB-FIX-001 | 遠端 WS 連線修復 (雙系統補完) | 2025-02-23 |
 | TASK-ORC-03 | 流量代理層實作 (Zero-Downtime) | 2025-02-23 |

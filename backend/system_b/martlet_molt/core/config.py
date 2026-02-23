@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
 # 動態獲取專案根目錄 (MartletMolt/)
+# 結構: backend/system_a/martlet_molt/core/config.py -> 往上四層
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
 
 
