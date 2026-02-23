@@ -16,6 +16,7 @@ from orchestrator.health_check import health_checker
 from orchestrator.manager import process_manager
 from orchestrator.state import state_manager
 from orchestrator.switcher import switcher
+from orchestrator.proxy import app as proxy_app
 
 # 設定 loguru
 logger.remove()
@@ -32,19 +33,36 @@ console = Console()
 app = typer.Typer(name="orchestrator", help="MartletMolt Orchestrator")
 
 
+def run_proxy():
+    """運行反向代理服務器"""
+    import uvicorn
+    uvicorn.run(proxy_app, host=settings.host, port=settings.port, log_level="warning")
+
+
 @app.command()
 def start(
     system: str | None = typer.Option(None, "--system", "-s", help="指定啟動的系統 (a/b)"),
     daemon: bool = typer.Option(False, "--daemon", "-d", help="以守護程序運行"),
+    proxy: bool = typer.Option(True, "--proxy/--no-proxy", help="是否啟動反向代理 (預設開啟)"),
 ) -> None:
     """啟動 Orchestrator"""
     console.print(f"[bold green]MartletMolt Orchestrator v{__version__}[/bold green]")
     console.print(f"[dim]Log Level: {settings.log_level}[/dim]")
     console.print()
 
+    # 啟動代理服務
+    proxy_process = None
+    if proxy:
+        from multiprocessing import Process
+        console.print(f"[cyan]Starting Proxy on {settings.host}:{settings.port}...[/cyan]")
+        proxy_process = Process(target=run_proxy, daemon=True)
+        proxy_process.start()
+
     # 註冊信號處理
     def signal_handler(sig, frame):
         console.print("\n[yellow]Shutting down...[/yellow]")
+        if proxy_process:
+            proxy_process.terminate()
         process_manager.stop("a")
         process_manager.stop("b")
         sys.exit(0)
@@ -61,6 +79,8 @@ def start(
         console.print(f"[dim]URL: {getattr(settings, f'system_{system}').url}[/dim]")
     else:
         console.print(f"[red]Failed to start system {system}[/red]")
+        if proxy_process:
+            proxy_process.terminate()
         raise typer.Exit(1)
 
     if daemon:
@@ -70,6 +90,13 @@ def start(
         console.print("[dim]Running in daemon mode...[/dim]")
         while True:
             time.sleep(settings.health_check.interval)
+            # 檢查代理進程
+            if proxy and proxy_process and not proxy_process.is_alive():
+                logger.warning("Proxy process died, restarting...")
+                from multiprocessing import Process
+                proxy_process = Process(target=run_proxy, daemon=True)
+                proxy_process.start()
+
             # 健康檢查
             active = state_manager.get_active_system()
             active_config = getattr(settings, f"system_{active}")

@@ -52,6 +52,8 @@ class OrchestratorSettings(BaseSettings):
     # 基礎設定
     debug: bool = False
     log_level: str = "INFO"
+    host: str = "0.0.0.0"
+    port: int = 8000  # Orchestrator 入口埠號
 
     # 健康檢查
     health_check: HealthCheckConfig = HealthCheckConfig()
