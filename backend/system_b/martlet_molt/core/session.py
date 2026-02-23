@@ -12,6 +12,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 
+from loguru import logger
 from pydantic import BaseModel, Field
 
 from martlet_molt.core.config import settings
@@ -413,22 +414,22 @@ class SessionManager:
     def rename_session(self, session_id: str, new_title: str) -> bool:
         """
         重命名會話標題
-        
+
         Args:
             session_id: 會話 ID
             new_title: 新標題
-            
+
         Returns:
             是否成功
         """
         session = self.get(session_id)
         if not session:
             return False
-            
+
         session.metadata["title"] = new_title
         session.updated_at = datetime.now().isoformat()
         self.save(session)
-        
+
         logger.info(f"Session {session_id} renamed to: {new_title}")
         return True
 
@@ -601,7 +602,7 @@ class SessionManager:
             cursor.execute(
                 f"""
                 UPDATE messages
-                SET {', '.join(updates)}
+                SET {", ".join(updates)}
                 WHERE id = ? AND session_id = ?
                 """,
                 params,
@@ -619,12 +620,8 @@ class SessionManager:
                 role=role if role is not None else row["role"],
                 content=content if content is not None else (row["content"] or ""),
                 name=name if name is not None else row["name"],
-                tool_call_id=tool_call_id
-                if tool_call_id is not None
-                else row["tool_call_id"],
-                tool_calls=tool_calls
-                if tool_calls is not None
-                else (json.loads(row["tool_calls"]) if row["tool_calls"] else None),
+                tool_call_id=tool_call_id if tool_call_id is not None else row["tool_call_id"],
+                tool_calls=tool_calls if tool_calls is not None else (json.loads(row["tool_calls"]) if row["tool_calls"] else None),
                 timestamp=row["timestamp"],
             )
 

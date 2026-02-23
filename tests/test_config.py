@@ -1,10 +1,7 @@
 import os
-from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import patch
 
-import pytest
-import yaml
-from martlet_molt.core.config import Settings, _resolve_env_vars, GatewayConfig
+from martlet_molt.core.config import GatewayConfig, Settings, _resolve_env_vars
 
 
 def test_resolve_env_vars():
@@ -32,12 +29,8 @@ def test_settings_default_values():
 
 def test_settings_yaml_loading():
     """測試從 YAML 載入配置"""
-    mock_yaml = {
-        "gateway": {"port": 9999},
-        "agent": {"default_provider": "openai"},
-        "tools": {"web_enabled": False}
-    }
-    
+    mock_yaml = {"gateway": {"port": 9999}, "agent": {"default_provider": "openai"}, "tools": {"web_enabled": False}}
+
     with patch("martlet_molt.core.config.load_yaml_config", return_value=mock_yaml):
         settings = Settings()
         assert settings.gateway.port == 9999

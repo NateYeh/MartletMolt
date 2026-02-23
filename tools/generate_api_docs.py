@@ -26,11 +26,11 @@ class ApiDocGenerator:
             docs_dir: docs 目錄路徑
         """
         self.docs_dir = docs_dir
-        self.api_dir = docs_dir / 'api'
-        self.endpoints_dir = self.api_dir / 'endpoints'
-        self.schemas_dir = self.api_dir / 'schemas'
-        self.sdk_dir = self.api_dir / 'sdk'
-        self.templates_dir = docs_dir / 'templates'
+        self.api_dir = docs_dir / "api"
+        self.endpoints_dir = self.api_dir / "endpoints"
+        self.schemas_dir = self.api_dir / "schemas"
+        self.sdk_dir = self.api_dir / "sdk"
+        self.templates_dir = docs_dir / "templates"
 
         # 設定 Jinja2 環境
         self.env = Environment(
@@ -49,16 +49,16 @@ class ApiDocGenerator:
         Returns:
             解析後的資料
         """
-        with open(path, encoding='utf-8') as f:
+        with open(path, encoding="utf-8") as f:
             return yaml.safe_load(f) or {}
 
     def load_config(self) -> dict[str, Any]:
         """載入配置檔案"""
-        return self.load_yaml(self.api_dir / 'config.yaml')
+        return self.load_yaml(self.api_dir / "config.yaml")
 
     def load_common_schemas(self) -> dict[str, Any]:
         """載入共用 Schema"""
-        return self.load_yaml(self.schemas_dir / 'common.yaml')
+        return self.load_yaml(self.schemas_dir / "common.yaml")
 
     def load_endpoints(self) -> list[dict[str, Any]]:
         """
@@ -68,17 +68,17 @@ class ApiDocGenerator:
             排序後的端點列表
         """
         endpoints = []
-        for yaml_file in self.endpoints_dir.glob('*.yaml'):
+        for yaml_file in self.endpoints_dir.glob("*.yaml"):
             endpoint_data = self.load_yaml(yaml_file)
             endpoints.append(endpoint_data)
 
         # 按照 order 排序
-        endpoints.sort(key=lambda x: x.get('order', 999))
+        endpoints.sort(key=lambda x: x.get("order", 999))
         return endpoints
 
     def load_sdk(self) -> dict[str, Any]:
         """載入 SDK 定義"""
-        sdk_file = self.sdk_dir / 'typescript.yaml'
+        sdk_file = self.sdk_dir / "typescript.yaml"
         return self.load_yaml(sdk_file) if sdk_file.exists() else {}
 
     def _classify_endpoints(self, endpoints: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
@@ -96,19 +96,19 @@ class ApiDocGenerator:
         session_endpoints = []
 
         for endpoint in endpoints:
-            path = endpoint['endpoint']['path']
+            path = endpoint["endpoint"]["path"]
 
-            if '/sessions' in path:
+            if "/sessions" in path:
                 session_endpoints.append(endpoint)
-            elif '/chat' in path:
+            elif "/chat" in path:
                 chat_endpoints.append(endpoint)
             else:
                 system_endpoints.append(endpoint)
 
         return {
-            'system': system_endpoints,
-            'chat': chat_endpoints,
-            'session': session_endpoints,
+            "system": system_endpoints,
+            "chat": chat_endpoints,
+            "session": session_endpoints,
         }
 
     def _generate_endpoint_table_section(
@@ -133,22 +133,22 @@ class ApiDocGenerator:
         if not endpoints:
             return []
 
-        lines = [f'### {title}\n']
-        lines.append('| ' + ' | '.join(headers) + ' |')
-        lines.append('| ' + ' | '.join(['------'] * len(headers)) + ' |')
+        lines = [f"### {title}\n"]
+        lines.append("| " + " | ".join(headers) + " |")
+        lines.append("| " + " | ".join(["------"] * len(headers)) + " |")
 
         for ep in endpoints:
-            method = ep['endpoint']['method']
-            path = ep['endpoint']['path']
-            desc = ep['title']
+            method = ep["endpoint"]["method"]
+            path = ep["endpoint"]["path"]
+            desc = ep["title"]
 
             if include_stream:
-                is_stream = '✅' if 'stream' in path else '❌'
+                is_stream = "✅" if "stream" in path else "❌"
                 lines.append(f"| `{method}` | `{path}` | {desc} | {is_stream} |")
             else:
                 lines.append(f"| `{method}` | `{path}` | {desc} |")
 
-        lines.append('')
+        lines.append("")
         return lines
 
     def generate_api_endpoints_table(self, endpoints: list[dict[str, Any]]) -> str:
@@ -167,18 +167,18 @@ class ApiDocGenerator:
         # 系統端點
         lines.extend(
             self._generate_endpoint_table_section(
-                classified['system'],
-                '系統端點',
-                ['方法', '路徑', '描述'],
+                classified["system"],
+                "系統端點",
+                ["方法", "路徑", "描述"],
             )
         )
 
         # 對話端點
         lines.extend(
             self._generate_endpoint_table_section(
-                classified['chat'],
-                '對話端點',
-                ['方法', '路徑', '描述', '是否串流'],
+                classified["chat"],
+                "對話端點",
+                ["方法", "路徑", "描述", "是否串流"],
                 include_stream=True,
             )
         )
@@ -186,13 +186,13 @@ class ApiDocGenerator:
         # 會話管理端點
         lines.extend(
             self._generate_endpoint_table_section(
-                classified['session'],
-                '會話管理端點',
-                ['方法', '路徑', '描述'],
+                classified["session"],
+                "會話管理端點",
+                ["方法", "路徑", "描述"],
             )
         )
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def generate_markdown(self) -> str:
         """
@@ -209,15 +209,15 @@ class ApiDocGenerator:
 
         # 準備模板資料
         template_data = {
-            'config': config,
-            'endpoints': endpoints,
-            'common_schemas': common_schemas,
-            'sdk': sdk,
-            'api_endpoints_table': self.generate_api_endpoints_table(endpoints),
+            "config": config,
+            "endpoints": endpoints,
+            "common_schemas": common_schemas,
+            "sdk": sdk,
+            "api_endpoints_table": self.generate_api_endpoints_table(endpoints),
         }
 
         # 載入模板
-        template = self.env.get_template('api_sdk.md.j2')
+        template = self.env.get_template("api_sdk.md.j2")
 
         # 生成 Markdown
         return template.render(**template_data)
@@ -231,28 +231,28 @@ class ApiDocGenerator:
         """
         markdown_content = self.generate_markdown()
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write(markdown_content)
 
-        print(f'✅ API 文件已生成: {output_path}')
-        print(f'📊 檔案大小: {output_path.stat().st_size / 1024:.1f} KB')
+        print(f"✅ API 文件已生成: {output_path}")
+        print(f"📊 檔案大小: {output_path.stat().st_size / 1024:.1f} KB")
 
 
 def main():
     """主程式"""
     # 專案根目錄
     project_root = Path(__file__).parent.parent
-    docs_dir = project_root / 'docs'
+    docs_dir = project_root / "docs"
 
     # 輸出路徑
-    output_path = docs_dir / 'API_SDK.md'
+    output_path = docs_dir / "API_SDK.md"
 
     # 生成文件
     generator = ApiDocGenerator(docs_dir)
     generator.save_markdown(output_path)
 
-    print('\n🎉 完成！已生成 API_SDK.md')
+    print("\n🎉 完成！已生成 API_SDK.md")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

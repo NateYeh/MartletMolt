@@ -10,6 +10,10 @@ import yaml
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
 
+# 動態獲取專案根目錄 (MartletMolt/)
+# 結構: backend/system_a/martlet_molt/core/config.py -> 往上四層
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+
 
 class GatewayConfig(BaseModel):
     """Gateway 配置"""
@@ -71,9 +75,8 @@ def load_yaml_config() -> dict[str, Any]:
     """
     # 尋找配置檔路徑
     config_paths = [
+        BASE_DIR / "Config" / "settings.yaml",
         Path("Config/settings.yaml"),
-        Path("../Config/settings.yaml"),
-        Path("/mnt/work/py_works/external_projects/MartletMolt/Config/settings.yaml"),
     ]
 
     for config_path in config_paths:

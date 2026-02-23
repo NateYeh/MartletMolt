@@ -102,26 +102,15 @@ class WebChannel(BaseChannel):
 
     async def send_stream(self, content: str) -> bool:
         """發送串流片段"""
-        return await self.send(ChannelResponse(
-            content=content,
-            metadata={"type": "stream"}
-        ))
+        return await self.send(ChannelResponse(content=content, metadata={"type": "stream"}))
 
     async def send_done(self) -> bool:
         """發送完成訊號"""
-        return await self.send(ChannelResponse(
-            content="",
-            metadata={"type": "done"}
-        ))
+        return await self.send(ChannelResponse(content="", metadata={"type": "done"}))
 
     async def send_error(self, error: str) -> bool:
         """發送錯誤訊息"""
-        return await self.send(ChannelResponse(
-            content="",
-            success=False,
-            error=error,
-            metadata={"type": "error"}
-        ))
+        return await self.send(ChannelResponse(content="", success=False, error=error, metadata={"type": "error"}))
 
     async def stop(self) -> bool:
         """

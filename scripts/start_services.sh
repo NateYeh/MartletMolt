@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # MartletMolt 專案啟動服務
-PROJECT_ROOT="/mnt/work/py_works/external_projects/MartletMolt"
+# 自動獲取專案根目錄 (確保腳本移動到其他地方也能跑)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_DIR="$PROJECT_ROOT/shared/logs"
 
 # 確保日誌目錄存在

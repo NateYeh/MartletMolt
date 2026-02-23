@@ -16,6 +16,7 @@ from martlet_molt.providers.openai import OpenAIProvider
 
 router = APIRouter()
 
+
 def get_provider() -> BaseProvider:
     """取得 Provider 實例 (同步自 routes.py)"""
     provider_name = settings.agent.default_provider
@@ -42,6 +43,7 @@ def get_provider() -> BaseProvider:
         )
     else:
         raise ValueError(f"Unsupported provider: {provider_name}")
+
 
 @router.websocket("/ws/{session_id}")
 async def chat_websocket(websocket: WebSocket, session_id: str):

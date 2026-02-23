@@ -12,29 +12,17 @@ class IOTControlTool(BaseTool):
     IoT 裝置控制工具。
     讓 Agent 能透過此工具向已連線的遠端裝置發送指令。
     """
+
     name = "iot_control"
-    description = (
-        "控制已連線的遠端 IoT 裝置。你可以使用此工具執行特定的裝置操作，"
-        "如開關燈、調整空調溫度、讀取傳感器數值等。"
-        "使用前可以先詢問當前有哪些可用裝置。"
-    )
+    description = "控制已連線的遠端 IoT 裝置。你可以使用此工具執行特定的裝置操作，如開關燈、調整空調溫度、讀取傳感器數值等。使用前可以先詢問當前有哪些可用裝置。"
     parameters_schema = {
         "type": "object",
         "properties": {
-            "device_id": {
-                "type": "string",
-                "description": "目標裝置的 ID。"
-            },
-            "method": {
-                "type": "string",
-                "description": "要對裝置執行的動作名稱 (例如 'toggle_light' 或 'set_brightness')。"
-            },
-            "params": {
-                "type": "object",
-                "description": "該動作所需的參數鍵值對。"
-            }
+            "device_id": {"type": "string", "description": "目標裝置的 ID。"},
+            "method": {"type": "string", "description": "要對裝置執行的動作名稱 (例如 'toggle_light' 或 'set_brightness')。"},
+            "params": {"type": "object", "description": "該動作所需的參數鍵值對。"},
         },
-        "required": ["device_id", "method"]
+        "required": ["device_id", "method"],
     }
 
     def execute(self, device_id: str, method: str, params: dict[str, Any] = None) -> ToolResult:
@@ -59,15 +47,9 @@ class IOTControlTool(BaseTool):
                 success = asyncio.run(device_registry.execute_command(device_id, method, params))
 
             if success:
-                return ToolResult(
-                    success=True,
-                    data=f"Success: Instruction '{method}' sent to device '{device_id}'."
-                )
+                return ToolResult(success=True, data=f"Success: Instruction '{method}' sent to device '{device_id}'.")
             else:
-                return ToolResult(
-                    success=False,
-                    error=f"Failed to send command to '{device_id}'. Device might be offline."
-                )
+                return ToolResult(success=False, error=f"Failed to send command to '{device_id}'. Device might be offline.")
         except Exception as e:
             logger.exception("IOTControlTool 執行異常")
             return ToolResult(success=False, error=f"Internal Error: {str(e)}")

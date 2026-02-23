@@ -14,9 +14,9 @@ from orchestrator import __version__
 from orchestrator.config import settings
 from orchestrator.health_check import health_checker
 from orchestrator.manager import process_manager
+from orchestrator.proxy import app as proxy_app
 from orchestrator.state import state_manager
 from orchestrator.switcher import switcher
-from orchestrator.proxy import app as proxy_app
 
 # 設定 loguru
 logger.remove()
@@ -36,6 +36,7 @@ app = typer.Typer(name="orchestrator", help="MartletMolt Orchestrator")
 def run_proxy():
     """運行反向代理服務器"""
     import uvicorn
+
     uvicorn.run(proxy_app, host=settings.host, port=settings.port, log_level="warning")
 
 
@@ -54,6 +55,7 @@ def start(
     proxy_process = None
     if proxy:
         from multiprocessing import Process
+
         console.print(f"[cyan]Starting Proxy on {settings.host}:{settings.port}...[/cyan]")
         proxy_process = Process(target=run_proxy, daemon=True)
         proxy_process.start()
@@ -96,13 +98,17 @@ def start(
             if proxy and proxy_process and not proxy_process.is_alive():
                 logger.warning("Proxy process died, restarting...")
                 from multiprocessing import Process
+
                 proxy_process = Process(target=run_proxy, daemon=True)
                 proxy_process.start()
 
-            # 健康檢查
+            # 健康檢查並強制同步狀態
             active = state_manager.get_active_system()
             active_config = getattr(settings, f"system_{active}")
             health = health_checker.check(active_config.url)
+
+            # 不論成功或失敗，都把最新檢查結果同步到狀態管理器
+            state_manager.update_health(active, health)
 
             if health.status != "running":
                 logger.warning(f"System {active} health check failed, attempting restart")

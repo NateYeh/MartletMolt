@@ -2,11 +2,14 @@
 Orchestrator 配置管理
 """
 
-import yaml
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+import yaml
+from pydantic import BaseModel
 from pydantic_settings import BaseSettings
+
+# 動態獲取專案根目錄 (MartletMolt/)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class HealthCheckConfig(BaseModel):
@@ -47,7 +50,7 @@ class SystemConfig(BaseModel):
 
 def load_yaml_config() -> dict:
     """從 Config/settings.yaml 載入配置"""
-    yaml_path = Path("Config/settings.yaml")
+    yaml_path = BASE_DIR / "Config" / "settings.yaml"
     if yaml_path.exists():
         try:
             with open(yaml_path, encoding="utf-8") as f:
@@ -88,7 +91,7 @@ class OrchestratorSettings(BaseSettings):
     )
 
     # 狀態檔案路徑
-    state_file: Path = Path("shared/state/state.json")
+    state_file: Path = BASE_DIR / "shared" / "state" / "state.json"
 
     def __init__(self, **values):
         # 載入 YAML 設定並作為初始值

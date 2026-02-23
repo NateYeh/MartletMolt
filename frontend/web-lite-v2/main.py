@@ -20,16 +20,13 @@ STATIC_DIR = BASE_DIR / "static"
 
 # 後端 API 配置 (指向 Orchestrator 入口)
 import os
+
 BACKEND_HOST = os.getenv("MARTLET_BACKEND_HOST", "127.0.0.1")
 BACKEND_PORT = int(os.getenv("MARTLET_BACKEND_PORT", 8000))
 BACKEND_URL = f"http://{BACKEND_HOST}:{BACKEND_PORT}"
 
 # FastAPI 應用
-app = FastAPI(
-    title="MartletMolt Web Lite V2",
-    description="輕量化版 LobeHub UI",
-    version="0.2.0"
-)
+app = FastAPI(title="MartletMolt Web Lite V2", description="輕量化版 LobeHub UI", version="0.2.0")
 
 # 掛載靜態文件
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -47,13 +44,7 @@ async def index(request: Request):
         host = request.url.hostname
         current_backend = f"http://{host}:{BACKEND_PORT}"
 
-    return templates.TemplateResponse(
-        "index.html",
-        {
-            "request": request,
-            "backend_url": current_backend
-        }
-    )
+    return templates.TemplateResponse("index.html", {"request": request, "backend_url": current_backend})
 
 
 @app.get("/chat", response_class=HTMLResponse)
@@ -64,23 +55,13 @@ async def chat(request: Request):
         host = request.url.hostname
         current_backend = f"http://{host}:{BACKEND_PORT}"
 
-    return templates.TemplateResponse(
-        "chat.html",
-        {
-            "request": request,
-            "backend_url": current_backend
-        }
-    )
+    return templates.TemplateResponse("chat.html", {"request": request, "backend_url": current_backend})
 
 
 @app.get("/health")
 async def health():
     """健康檢查"""
-    return {
-        "status": "ok",
-        "service": "web-lite-v2",
-        "backend_url": BACKEND_URL
-    }
+    return {"status": "ok", "service": "web-lite-v2", "backend_url": BACKEND_URL}
 
 
 async def check_backend():
@@ -106,6 +87,7 @@ def main():
 
     # 同步執行非同步檢查
     import asyncio
+
     is_backend_up = asyncio.run(check_backend())
 
     if not is_backend_up:
@@ -113,12 +95,7 @@ def main():
 
     logger.info("[Web Lite V2] 前端地址: http://0.0.0.0:8002")
 
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8002,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8002, log_level="info")
 
 
 if __name__ == "__main__":

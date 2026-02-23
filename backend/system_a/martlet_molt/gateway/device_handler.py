@@ -7,12 +7,9 @@ from ..core.device_registry import device_registry
 
 router = APIRouter()
 
+
 @router.websocket("/ws/devices/{device_id}")
-async def device_websocket_handler(
-    websocket: WebSocket,
-    device_id: str,
-    token: str | None = Query(None)
-):
+async def device_websocket_handler(websocket: WebSocket, device_id: str, token: str | None = Query(None)):
     """
     IoT 裝置專用的 WebSocket 入口。
     裝置連線後需主動發送註冊資訊。

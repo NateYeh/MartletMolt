@@ -27,7 +27,7 @@ class OpenAIProvider(BaseProvider):
     ):
         """
         初始化 OpenAI Provider
-        
+
         注意：為了支援雙容器架構，base_url 應優先從配置讀取，
         若未提供則預設為 None (由 SDK 使用預設或環境變數)。
         """

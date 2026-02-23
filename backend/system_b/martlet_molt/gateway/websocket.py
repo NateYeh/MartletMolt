@@ -8,13 +8,14 @@ from loguru import logger
 
 from martlet_molt.channels.web.channel import WebChannel
 from martlet_molt.core.agent import Agent
+from martlet_molt.core.config import settings
 from martlet_molt.core.session import session_manager
 from martlet_molt.providers.base import BaseProvider
 from martlet_molt.providers.ollama import OllamaProvider
 from martlet_molt.providers.openai import OpenAIProvider
-from martlet_molt.core.config import settings
 
 router = APIRouter()
+
 
 def get_provider() -> BaseProvider:
     """取得 Provider 實例 (同步自 routes.py)"""
@@ -43,18 +44,19 @@ def get_provider() -> BaseProvider:
     else:
         raise ValueError(f"Unsupported provider: {provider_name}")
 
+
 @router.websocket("/ws/{session_id}")
 async def chat_websocket(websocket: WebSocket, session_id: str):
     """聊天 WebSocket 入口"""
     channel = WebChannel(websocket, session_id)
-    
+
     if not await channel.start():
         return
 
     try:
         # 取得或建立會話
         session = session_manager.get_or_create(session_id)
-        
+
         # 建立 Provider 和 Agent
         provider = get_provider()
         agent = Agent(provider=provider, session=session)
@@ -62,16 +64,16 @@ async def chat_websocket(websocket: WebSocket, session_id: str):
         # 進入接收循環
         async for message in channel.receive():
             logger.info(f"Received message via WS: {message.content}")
-            
+
             # 使用 Agent 處理訊息並取得串流回應
             # 這裡我們直接調用 agent.stream 並將結果送回 channel
             try:
                 async for chunk in agent.stream(message.content):
                     await channel.send_stream(chunk)
-                
+
                 # 發送完成訊號
                 await channel.send_done()
-                
+
             except Exception as e:
                 logger.exception(f"Error during agent processing: {e}")
                 await channel.send_error(str(e))
