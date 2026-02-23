@@ -67,6 +67,7 @@
   - 函式/變數：`snake_case`
   - 工具命名：`web_*.py`, `file_*.py`
 - **錯誤處理**：統一使用 `loguru`，Exception 必須包含完整堆疊。
+- **禁絕 Hardcoding**：嚴禁硬編碼敏感資訊（如 Key）、環境變數或絕對路徑，應統一由 `Config/` 管理。
 
 ---
 
