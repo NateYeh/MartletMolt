@@ -61,6 +61,13 @@ async def chat_websocket(websocket: WebSocket, session_id: str):
         provider = get_provider()
         agent = Agent(provider=provider, session=session)
 
+        # 如果是新會話且沒有消息，添加預設系統提示詞
+        if not session.messages:
+            agent.add_system_prompt(
+                f"你是一個名為 MartletMolt 的自我進化 AI 助手。你的核心目標是協助用戶開發、調優並保護這個系統。你可以使用工具來讀取檔案、執行 Shell 命令、甚至修改自己的代碼。目前運行的系統版本是：{settings.system_name}。"
+            )
+            session_manager.save(session)
+
         # 進入接收循環
         async for message in channel.receive():
             logger.info(f"Received message via WS: {message.content}")

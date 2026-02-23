@@ -82,48 +82,100 @@
         <!-- 消息列表 -->
         <div x-show="messages.length > 0" class="max-w-3xl mx-auto w-full space-y-6">
             <template x-for="(message, index) in messages" :key="index">
-                <div class="flex gap-3 fade-in" 
-                     :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 transform translate-y-2"
-                     x-transition:enter-end="opacity-100 transform translate-y-0">
-                    
-                    <!-- Avatar -->
-                    <div x-show="message.role === 'assistant'" class="flex-shrink-0">
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg shadow-sm">
-                            🦅
-                        </div>
-                    </div>
-                    
-                    <!-- 消息內容 -->
-                    <div class="flex-1 max-w-[85%]" :class="message.role === 'user' ? 'order-1' : ''">
-                        <!-- 角色標籤 -->
-                        <div class="flex items-center mb-2" :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
-                            <span class="text-xs font-medium text-gray-500 dark:text-slate-400" 
-                                  x-text="message.role === 'user' ? '你' : 'MartletMolt'"></span>
-                            <span x-show="message.role === 'assistant'" class="ml-2 px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full">
-                                AI
-                            </span>
-                        </div>
-                        
-                        <!-- 消息框 -->
-                        <div class="rounded-2xl px-4 py-3 shadow-sm"
-                             :class="message.role === 'user' 
-                                    ? 'bg-blue-600 text-white rounded-tr-sm' 
-                                    : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-tl-sm'">
-                            <div class="markdown-body"
-                                 :class="message.role === 'user' ? 'text-white' : 'text-gray-900 dark:text-gray-100'"
-                                 x-html="renderMarkdown(message.content)">
+                <div class="flex flex-col gap-2">
+                    <!-- 系統訊息樣式 (全寬居中) -->
+                    <template x-if="message.role === 'system'">
+                        <div class="flex justify-center my-4">
+                            <div class="bg-gray-100 dark:bg-slate-800/50 rounded-lg px-4 py-2 border border-gray-200 dark:border-slate-700 max-w-[90%] text-center">
+                                <div class="flex items-center justify-center space-x-2 mb-1">
+                                    <span class="text-[10px] font-bold tracking-wider text-gray-400 uppercase">System Prompt</span>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-slate-400 italic break-words line-clamp-3 hover:line-clamp-none transition-all cursor-help" 
+                                     x-text="message.content"></div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- User Avatar -->
-                    <div x-show="message.role === 'user'" class="flex-shrink-0 order-2">
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-lg shadow-sm">
-                            👤
+                    </template>
+
+                    <!-- 標準對話樣式 (User/Assistant/Tool) -->
+                    <template x-if="message.role !== 'system'">
+                        <div class="flex gap-3 fade-in" 
+                             :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 transform translate-y-2"
+                             x-transition:enter-end="opacity-100 transform translate-y-0">
+                            
+                            <!-- Avatar (Assistant & Tool) -->
+                            <div x-show="message.role === 'assistant' || message.role === 'tool'" class="flex-shrink-0">
+                                <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-lg shadow-sm"
+                                     :class="message.role === 'assistant' ? 'bg-gradient-to-br from-blue-500 to-purple-600' : 'bg-amber-500'">
+                                    <span x-text="message.role === 'assistant' ? '🦅' : '🛠️'"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- 消息內容 -->
+                            <div class="flex-1 max-w-[85%]" :class="message.role === 'user' ? 'order-1' : ''">
+                                <!-- 角色標籤 -->
+                                <div class="flex items-center mb-1" :class="message.role === 'user' ? 'justify-end' : 'justify-start'">
+                                    <span class="text-xs font-medium text-gray-500 dark:text-slate-400" 
+                                          x-text="message.role === 'user' ? '你' : (message.role === 'assistant' ? 'MartletMolt' : '工具執行: ' + (message.name || 'Unknown'))"></span>
+                                    <template x-if="message.role === 'assistant'">
+                                        <span class="ml-2 px-2 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full font-bold">AI</span>
+                                    </template>
+                                    <template x-if="message.role === 'tool'">
+                                        <span class="ml-2 px-2 py-0.5 text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full font-bold">RESULT</span>
+                                    </template>
+                                </div>
+                                
+                                <!-- Tool Calls (If any in assistant message) -->
+                                <template x-if="message.role === 'assistant' && message.tool_calls && message.tool_calls.length > 0">
+                                    <div class="mb-2 space-y-1">
+                                        <template x-for="call in message.tool_calls" :key="call.id">
+                                            <div class="text-[11px] bg-slate-100 dark:bg-slate-700/50 rounded px-2 py-1 text-slate-500 flex items-center border border-slate-200 dark:border-slate-600">
+                                                <span class="mr-2">⚡ 呼叫工具: <strong x-text="call.function?.name || call.name"></strong></span>
+                                                <span class="opacity-60 overflow-hidden text-ellipsis whitespace-nowrap" x-text="call.function?.arguments || JSON.stringify(call.arguments)"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- 消息框 -->
+                                <div class="rounded-2xl px-4 py-3 shadow-sm"
+                                     :class="{
+                                        'bg-blue-600 text-white rounded-tr-sm': message.role === 'user',
+                                        'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-tl-sm': message.role === 'assistant',
+                                        'bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-tl-sm': message.role === 'tool'
+                                     }">
+                                    
+                                    <!-- 思考過程/Reasoning (如果有 content 且以 <thought> 開頭或包含思考邏輯) -->
+                                    <template x-if="message.role === 'assistant' && message.content && message.content.includes('<thought>')">
+                                        <div class="mb-3 border-l-2 border-slate-300 dark:border-slate-600 pl-3 py-1 text-sm text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30 rounded-r">
+                                            <details>
+                                                <summary class="cursor-pointer font-medium hover:text-blue-500 transition-colors">思考過程</summary>
+                                                <div class="mt-2 text-xs leading-relaxed" x-text="message.content.match(/<thought>([\s\S]*?)<\/thought>/)?.[1] || '解析中...'"></div>
+                                            </details>
+                                        </div>
+                                    </template>
+
+                                    <!-- 實際回覆內容 (移除 thought 標籤後顯示) -->
+                                    <div class="markdown-body"
+                                         :class="{
+                                            'text-white': message.role === 'user',
+                                            'text-gray-900 dark:text-gray-100': message.role !== 'user',
+                                            'text-xs font-mono opacity-80': message.role === 'tool'
+                                         }"
+                                         x-html="renderMarkdown(message.role === 'assistant' ? message.content.replace(/<thought>[\s\S]*?<\/thought>/, '') : message.content)">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- User Avatar -->
+                            <div x-show="message.role === 'user'" class="flex-shrink-0 order-2">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-lg shadow-sm">
+                                    👤
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </template>
                 </div>
             </template>
             
@@ -234,7 +286,25 @@ function chatApp() {
             console.log('[ChatApp] 初始化完成');
             this.loadSessionId();
             this.adjustBackendUrl();
-            this.connectWebSocket();
+            this.fetchHistory().then(() => {
+                this.connectWebSocket();
+            });
+        },
+
+        async fetchHistory() {
+            try {
+                const url = `${this.backendUrl}/sessions/${this.sessionId}`;
+                console.log('[ChatApp] 正在抓取歷史紀錄:', url);
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.messages = data.messages || [];
+                    console.log(`[ChatApp] 載入 ${this.messages.length} 條原始訊息`);
+                    this.scrollToBottom();
+                }
+            } catch (error) {
+                console.error('[ChatApp] 抓取歷史失敗:', error);
+            }
         },
 
         adjustBackendUrl() {
@@ -327,9 +397,11 @@ function chatApp() {
                 } 
                 else if (type === 'done') {
                     // 串流完成
-                    console.log('[ChatApp] 串流完成');
-                    this.isLoading = false;
-                    this.scrollToBottom();
+                    console.log('[ChatApp] 串流完成，重新同步最後一條訊息');
+                    this.fetchHistory().then(() => {
+                        this.isLoading = false;
+                        this.scrollToBottom();
+                    });
                 } 
                 else if (type === 'error') {
                     // 錯誤
