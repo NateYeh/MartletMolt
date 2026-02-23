@@ -2,9 +2,10 @@
 Orchestrator 配置管理
 """
 
+import yaml
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
 
@@ -24,8 +25,8 @@ class SyncConfig(BaseModel):
     exclude_patterns: list[str] = [
         "__pycache__",
         "*.pyc",
-        "*.pyo",
         ".git",
+        ".venv",
         "node_modules",
         "*.log",
     ]
@@ -44,6 +45,19 @@ class SystemConfig(BaseModel):
         return f"http://{self.host}:{self.port}"
 
 
+def load_yaml_config() -> dict:
+    """從 Config/settings.yaml 載入配置"""
+    yaml_path = Path("Config/settings.yaml")
+    if yaml_path.exists():
+        try:
+            with open(yaml_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                return data.get("orchestrator", {})
+        except Exception:
+            return {}
+    return {}
+
+
 class OrchestratorSettings(BaseSettings):
     """Orchestrator 設定"""
 
@@ -53,7 +67,7 @@ class OrchestratorSettings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
     host: str = "0.0.0.0"
-    port: int = 8000  # Orchestrator 入口埠號
+    port: int = 8000
 
     # 健康檢查
     health_check: HealthCheckConfig = HealthCheckConfig()
@@ -75,6 +89,13 @@ class OrchestratorSettings(BaseSettings):
 
     # 狀態檔案路徑
     state_file: Path = Path("shared/state/state.json")
+
+    def __init__(self, **values):
+        # 載入 YAML 設定並作為初始值
+        yaml_data = load_yaml_config()
+        # 優先合併 YAML 資料，但允許傳入的 values 覆蓋
+        combined_values = {**yaml_data, **values}
+        super().__init__(**combined_values)
 
 
 # 全域設定實例
