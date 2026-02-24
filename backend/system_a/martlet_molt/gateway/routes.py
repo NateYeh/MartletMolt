@@ -91,6 +91,12 @@ def get_provider() -> BaseProvider:
 
 
 # API 路由
+@router.get("/")
+async def root():
+    """根路由身份識別"""
+    return {"message": "Hello from System A", "system": "system_a"}
+
+
 @router.get("/health", response_model=HealthResponse)
 async def health_check():
     """健康檢查端點"""
