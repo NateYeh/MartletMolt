@@ -26,6 +26,7 @@ services:
       - /volume1/public/work/py_works/external_projects/MartletMolt/shared:/app/shared                # 共享數據
       - /volume1/public/work/py_works/external_projects/MartletMolt/Config:/app/Config                # 共享配置
       - /volume1/public/work/py_works/external_projects/MartletMolt/skills:/app/skills                # 共享技能包
+      - /var/run/docker.sock:/var/run/docker.sock                                     # 賦予操作容器能力 (DooD)
     environment:
       - SYSTEM_ID=A
       - ORCHESTRATOR_URL=http://orchestrator:8000
@@ -46,6 +47,7 @@ services:
       - /volume1/public/work/py_works/external_projects/MartletMolt/shared:/app/shared
       - /volume1/public/work/py_works/external_projects/MartletMolt/Config:/app/Config
       - /volume1/public/work/py_works/external_projects/MartletMolt/skills:/app/skills
+      - /var/run/docker.sock:/var/run/docker.sock                                     # 賦予操作容器能力 (DooD)
     environment:
       - SYSTEM_ID=B
       - ORCHESTRATOR_URL=http://orchestrator:8000

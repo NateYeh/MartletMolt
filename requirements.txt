@@ -24,3 +24,6 @@ aiofiles
 openai
 anthropic
 playwright
+
+# 運維工具
+docker
